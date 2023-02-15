@@ -16,6 +16,7 @@ struct WordInfo {
     overview: String,
 }
 
+// first request, get some word to match search term
 async fn get_search_term_response_json(input_term: &str)-> Result<Value, Box<dyn Error>> {
     let client = reqwest::Client::new();
     let response = client.get(
@@ -67,6 +68,7 @@ async fn get_search_result(search_term: &str) -> Result<Option<String>, Box<dyn 
     }
 }
 
+// second request, get detailes of matched word
 async fn get_search_result_response_text(search_result: &str) -> Result<String, reqwest::Error> {
     let client = reqwest::Client::new();
     client.get(
