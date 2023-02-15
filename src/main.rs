@@ -82,72 +82,40 @@ async fn get_search_result_response_text(search_result: &str) -> Result<String, 
         .await
 }
 
+fn _get_class_content_from_html(html: Html, class_selector: &str) -> Result<String, Box<dyn Error>> {
+    let selector = scraper::Selector::parse(class_selector).unwrap();
+    let first_text =  html.select(&selector)
+        .map(|x| x.inner_html()) // here it maybe text
+        .next();
+    match first_text {
+        Some(text) => Ok(text),
+        None => panic!("No element with class=\"{class_selector}\" found.")
+    }
+}
 
 fn get_basics_text_from_response_text(response_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_document(response_text);
-    let basics_selector = scraper::Selector::parse(".basics").unwrap();
-    let first_basics_text =  document.select(&basics_selector)
-        .map(|x| x.inner_html()) // here it maybe text
-        .next();
-    match first_basics_text {
-        Some(text) => Ok(text),
-        None => panic!("No element with class=\"basics\" found.")
-    }
+    _get_class_content_from_html(document, ".basics")
 }
 
 fn get_translations_text_from_response_text(response_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_document(response_text);
-    let translations_selector = scraper::Selector::parse(".translations").unwrap();
-    let first_basics_text =  document.select(&translations_selector)
-        .map(|x| x.inner_html()) // here it maybe text
-        .next();
-    match first_basics_text {
-        Some(text) => Ok(text),
-        None => panic!("No element with class=\"translations\" found.")
-    }
+    _get_class_content_from_html(document, ".translations")
 }
 
 fn get_title_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
-    let bare_selector = scraper::Selector::parse(".bare").unwrap();
-    let first_bare_text = document.select(&bare_selector)
-        .map(|x| x.inner_html()) // here it maybe text
-        .next();
-    match first_bare_text {
-        Some(text) => Ok(text),
-        None => panic!("No element with class=\"bare\" found.")
-    }
+    _get_class_content_from_html(document, ".bare")
 }
 
 fn get_overview_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
-    let overview_selector = scraper::Selector::parse(".overview").unwrap();
-    let overview_html = document
-        .select(&overview_selector)
-        .map(|x| Html::parse_fragment(x.inner_html().as_str())) // here it maybe text
-        .next();
-    let overview_html = match overview_html {
-        Some(html) => html,
-        None => panic!("No element with class=\"overview\" found.")
-    };
-    let p_selector = scraper::Selector::parse("p").unwrap();
-    let p_vec = overview_html.select(&p_selector)
-        .map(|x| x.inner_html()) // here it maybe text
-        .collect::<Vec<String>>();
-    Ok(p_vec.join("\n"))
+    _get_class_content_from_html(document, ".overview")
 }
 
 fn get_other_translations_from_translations_text(basics_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
-    let other_translations_selector = scraper::Selector::parse(".tl-also").unwrap();
-    let other_translations_text = document
-        .select(&other_translations_selector)
-        .map(|x| x.inner_html()) // here it maybe text
-        .next();
-    let other_translations_text = match other_translations_text {
-        Some(html) => html,
-        None => panic!("No element with class=\"overview\" found.")
-    };
+    let other_translations_text = _get_class_content_from_html(document, ".tl-also")?;
     Ok(
         other_translations_text
         .split(", ")
@@ -158,14 +126,7 @@ fn get_other_translations_from_translations_text(basics_text: &str) -> Result<Ve
 
 fn get_main_translation_from_translations_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
-    let tl_selector = scraper::Selector::parse(".tl").unwrap();
-    let first_tl_text = document.select(&tl_selector)
-        .map(|x| x.inner_html()) // here it maybe text
-        .next();
-    match first_tl_text {
-        Some(text) => Ok(text),
-        None => panic!("No element with class=\"bare\" found.")
-    }
+    _get_class_content_from_html(document, ".tl")
 }
 
 async fn get_translation_info(search_term: &str) -> Result<WordInfo, Box<dyn Error>> {
