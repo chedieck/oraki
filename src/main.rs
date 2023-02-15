@@ -82,7 +82,8 @@ async fn get_search_result_response_text(search_result: &str) -> Result<String, 
         .await
 }
 
-async fn get_basics_text_from_response_text(response_text: &str) -> Result<String, Box<dyn Error>> {
+
+fn get_basics_text_from_response_text(response_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_document(response_text);
     let basics_selector = scraper::Selector::parse(".basics").unwrap();
     let first_basics_text =  document.select(&basics_selector)
@@ -94,7 +95,7 @@ async fn get_basics_text_from_response_text(response_text: &str) -> Result<Strin
     }
 }
 
-async fn get_translations_text_from_response_text(response_text: &str) -> Result<String, Box<dyn Error>> {
+fn get_translations_text_from_response_text(response_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_document(response_text);
     let translations_selector = scraper::Selector::parse(".translations").unwrap();
     let first_basics_text =  document.select(&translations_selector)
@@ -106,7 +107,7 @@ async fn get_translations_text_from_response_text(response_text: &str) -> Result
     }
 }
 
-async fn get_title_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
+fn get_title_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
     let bare_selector = scraper::Selector::parse(".bare").unwrap();
     let first_bare_text = document.select(&bare_selector)
@@ -118,7 +119,7 @@ async fn get_title_from_basics_text(basics_text: &str) -> Result<String, Box<dyn
     }
 }
 
-async fn get_overview_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
+fn get_overview_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
     let overview_selector = scraper::Selector::parse(".overview").unwrap();
     let overview_html = document
@@ -136,7 +137,7 @@ async fn get_overview_from_basics_text(basics_text: &str) -> Result<String, Box<
     Ok(p_vec.join("\n"))
 }
 
-async fn get_other_translations_from_translations_text(basics_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
+fn get_other_translations_from_translations_text(basics_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
     let other_translations_selector = scraper::Selector::parse(".tl-also").unwrap();
     let other_translations_text = document
@@ -155,7 +156,7 @@ async fn get_other_translations_from_translations_text(basics_text: &str) -> Res
     )
 }
 
-async fn get_main_translation_from_translations_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
+fn get_main_translation_from_translations_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
     let tl_selector = scraper::Selector::parse(".tl").unwrap();
     let first_tl_text = document.select(&tl_selector)
@@ -178,13 +179,13 @@ async fn get_translation_info(search_term: &str) -> Result<WordInfo, Box<dyn Err
     };
     let response_text = get_search_result_response_text(&search_result).await?;
 
-    let basics_text = get_basics_text_from_response_text(response_text.as_str()).await?;
-    let title = get_title_from_basics_text(basics_text.as_str()).await?;
-    let overview = get_overview_from_basics_text(basics_text.as_str()).await?;
+    let basics_text = get_basics_text_from_response_text(response_text.as_str())?;
+    let title = get_title_from_basics_text(basics_text.as_str())?;
+    let overview = get_overview_from_basics_text(basics_text.as_str())?;
 
-    let translations_text = get_translations_text_from_response_text(response_text.as_str()).await?;
-    let main_translation = get_main_translation_from_translations_text(translations_text.as_str()).await?;
-    let other_translations = get_other_translations_from_translations_text(translations_text.as_str()).await?;
+    let translations_text = get_translations_text_from_response_text(response_text.as_str())?;
+    let main_translation = get_main_translation_from_translations_text(translations_text.as_str())?;
+    let other_translations = get_other_translations_from_translations_text(translations_text.as_str())?;
     Ok(WordInfo {
         search_term: String::from(search_term),
         search_result,
