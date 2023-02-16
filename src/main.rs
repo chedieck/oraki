@@ -16,6 +16,18 @@ struct WordInfo {
     overview: String,
 }
 
+impl WordInfo {
+    //refactor this to standart display
+    fn display(&self) -> String {
+        format!(
+            "{}\n{}\n{}\n{}",
+            self.title.as_str(),
+            self.main_translation.as_str(),
+            self.other_translations.join(", "),
+            self.overview,
+        )
+    }
+}
 // first request, get some word to match search term
 async fn get_search_term_response_json(input_term: &str)-> Result<Value, Box<dyn Error>> {
     let client = reqwest::Client::new();
