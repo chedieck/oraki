@@ -11,8 +11,8 @@ struct WordInfo {
     search_term:  String,
     search_result: String,
     title: String,
-    main_translation: String, // WIP
-    other_translations: Vec<String>, // WIP
+    main_translation: String,
+    other_translations: Vec<String>,
     overview: String,
 }
 
