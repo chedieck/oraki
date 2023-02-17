@@ -147,7 +147,7 @@ async fn get_translation_info(search_term: &str) -> Result<WordInfo, Box<dyn Err
     let search_result = match get_search_result(search_term).await {
         Ok(result) =>
             match result {
-                Some(result) => result,
+                Some(result) => result.replace('\'', ""),
                 None => panic!("No results found for {search_term}.")
             },
         Err(error) => panic!("Couldn't find search result for term `{search_term}` with error:\n{error}")
