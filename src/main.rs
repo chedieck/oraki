@@ -21,13 +21,21 @@ impl WordInfo {
     fn display(&self) -> String {
         format!(
             "{}\n{}\n{}\n{}",
+
+impl fmt::Display for WordInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}\n{}\n{}\n{}\n{}",
             self.title.as_str(),
             self.main_translation.as_str(),
-            self.other_translations.join(", "),
+            self.other_translations_concatenated(),
+            "-".repeat(self.max_field_len()),
             self.overview,
         )
     }
 }
+
 // first request, get some word to match search term
 async fn get_search_term_response_json(input_term: &str)-> Result<Value, Box<dyn Error>> {
     let client = reqwest::Client::new();
@@ -180,7 +188,7 @@ async fn main() -> Result<(), Box <dyn Error>> {
     };
     let search_term = args[1].as_str();
     let search_result = get_translation_info(search_term).await?;
-    println!("Search result: {search_result:#?}");
+    println!("{search_result}");
     Ok(())
 }
 
