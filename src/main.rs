@@ -3,6 +3,8 @@ use serde_json::Value;
 use std::error::Error;
 use std::env;
 use scraper::Html;
+use regex::Regex;
+use std::fmt;
 
 const HEADER_USER_AGENT : &str= "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36";
 
@@ -17,10 +19,26 @@ struct WordInfo {
 }
 
 impl WordInfo {
-    //refactor this to standart display
-    fn display(&self) -> String {
+    fn max_field_len(&self) -> usize {
+        let field_array: [usize; 4] = [
+            self.title.len(),
+            self.main_translation.len(),
+            self.other_translations_concatenated().len(),
+            self.overview.split('\n').map(|x| x.len()).max().unwrap_or(0),
+        ];
+        match field_array.iter().max() {
+            Some(m) => *m,
+            None => 1
+        }
+    }
+
+    fn other_translations_concatenated(&self) -> String {
         format!(
-            "{}\n{}\n{}\n{}",
+            "({})",
+            self.other_translations.join(", ")
+        )
+    }
+}
 
 impl fmt::Display for WordInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -127,19 +145,38 @@ fn get_translations_text_from_response_text(response_text: &str) -> Result<Strin
 
 fn get_title_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
-    _get_class_content_from_html(document, ".bare")
+    _get_class_content_from_html(document, ".bare span")
 }
 
 fn get_overview_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
-    _get_class_content_from_html(document, ".overview")
+    let overview_html_text = _get_class_content_from_html(document, ".overview")?;
+
+    let overview_html = Html::parse_fragment(overview_html_text.as_str());
+    let p_selector = scraper::Selector::parse("p").unwrap();
+
+
+    let text =  overview_html.select(&p_selector)
+        .flat_map(|x|
+        x.text()) // here it maybe text
+        .collect::<Vec<&str>>()
+        .join("\n")
+        .replace("\n \n", " ");
+    Ok(
+        text
+    )
 }
 
 fn get_other_translations_from_translations_text(basics_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
     let other_translations_text = _get_class_content_from_html(document, ".tl-also")?;
+
+    let re = Regex::new("Also<.*>").unwrap();
     Ok(
-        other_translations_text
+        re.replace(
+            other_translations_text.as_str(),
+            ""
+        )
         .split(", ")
         .map(String::from)
         .collect::<Vec<String>>()
