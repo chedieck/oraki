@@ -11,6 +11,7 @@ use csv::{ReaderBuilder, WriterBuilder};
 
 
 const MAIN_CSV_PATH: &str = "./main.csv";
+const MAIN_CSS_PATH: &str = "./main.css";
 const MODEL_ID: i64 = 4173289758;
 const DECK_ID: i64 = 8129381912;
 const DECK_NAME: &str = "Searched russian words";
@@ -19,6 +20,7 @@ const DEFAULT_EMPTY_VALUE: &str = "-";
 
 
 fn make_anki_model() -> Result<Model, Box<AnkiError>> {
+    let custom_css = std::fs::read_to_string(MAIN_CSS_PATH).unwrap();
     Ok(
         Model::new(
             MODEL_ID,
@@ -33,9 +35,10 @@ fn make_anki_model() -> Result<Model, Box<AnkiError>> {
                 Field::new("context_phrase")
             ],
             vec![Template::new("Card 1")
-            .qfmt("<p>{{search_term}}({{search_result}})<hr>{{context_phrase}}")
-            .afmt(r#"{{FrontSide}}<hr id="answer">{{main_translation}}<br>{{other_translations}}<br>{{overview}}"#)],
+            .qfmt("<p class=\"search_term\">{{search_term}}</p>({{search_result}})<hr>{{context_phrase}}")
+            .afmt(r#"{{FrontSide}}<hr id="answer">{{main_translation}}<br>{{other_translations}}<br><div class=\"overview\">{{overview}}</div>"#)],
         )
+        .css(custom_css)
     )
 }
 
@@ -77,8 +80,8 @@ impl WordInfo {
     fn to_csv_string_record_slice(&self) -> String {
         format!(
             "{}{}{}{}{}{}{}",
-            self.search_result,
             self.search_term,
+            self.search_result,
             self.title,
             self.main_translation,
             self.other_translations_joined(),
@@ -282,6 +285,26 @@ async fn get_translation_info(search_term: &str, context_phrase: Option<String>)
     })
 }
 
+fn create_note_from_result(model: Model, result: csv::StringRecord) -> Result<Note, Box<AnkiError>> {
+    let context_phrase = result.get(6).unwrap();
+    let search_term = result.get(0).unwrap();
+    let context_phrase = context_phrase.replace(search_term, format!("<p class=\"search_term\">{search_term}</p>").as_str());
+    Ok(
+        Note::new(
+            model,
+            vec![
+            search_term,
+            result.get(1).unwrap(),
+            result.get(2).unwrap(),
+            result.get(3).unwrap(),
+            result.get(4).unwrap(),
+            result.get(5).unwrap(),
+            context_phrase.as_str()
+            ]
+        ).expect(format!("Could not create note from {}", result.as_slice()).as_str())
+    )
+}
+
 fn create_deck_from_csv()-> Result<(), Box <dyn Error>> {
     let mut reader = ReaderBuilder::new()
         .delimiter(b'|')
@@ -295,18 +318,7 @@ fn create_deck_from_csv()-> Result<(), Box <dyn Error>> {
         let result = record?;
         let context_phrase = result.get(6).unwrap();
         if !context_phrase.is_empty() {
-            let note = Note::new(
-                make_anki_model()?,
-                vec![
-                result.get(0).unwrap(),
-                result.get(1).unwrap(),
-                result.get(2).unwrap(),
-                result.get(3).unwrap(),
-                result.get(4).unwrap(),
-                result.get(5).unwrap(),
-                context_phrase
-                ]
-            )?;
+            let note = create_note_from_result(make_anki_model()?, result)?;
             my_deck.add_note(note);
         }
     }
@@ -334,8 +346,8 @@ fn append_word_info(word_info: &WordInfo) -> Result<(), Box<dyn Error>> {
         }
     }
     writer.write_record([
-        word_info.search_result.as_str(),
         word_info.search_term.as_str(),
+        word_info.search_result.as_str(),
         word_info.title.as_str(),
         word_info.main_translation.as_str(),
         word_info.other_translations_joined().as_str(),
@@ -366,5 +378,3 @@ async fn main() -> Result<(), Box <dyn Error>> {
     create_deck_from_csv()?;
     Ok(())
 }
-
-// WIP check search_term in context phrase
