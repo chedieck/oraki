@@ -174,7 +174,9 @@ fn _get_class_content_from_html(html: Html, class_selector: &str) -> Result<Stri
         .next();
     match first_text {
         Some(text) => Ok(text),
-        None => panic!("No element with class=\"{class_selector}\" found.")
+        None => {
+            Err("No element with class=\"{class_selector}\" found.".into())
+        }
     }
 }
 
@@ -238,9 +240,9 @@ async fn get_translation_info(search_term: &str, context_phrase: Option<String>)
         Ok(result) =>
             match result {
                 Some(result) => result.replace('\'', ""),
-                None => panic!("No results found for {search_term}.")
+                None => return Err(format!("No results found for {search_term}.").into())
             },
-        Err(error) => panic!("Couldn't find search result for term `{search_term}` with error:\n{error}")
+        Err(error) => return Err(format!("Couldn't find search result for term `{search_term}` with error:\n{error}").into())
     };
     let response_text = get_search_result_response_text(&search_result).await?;
 
