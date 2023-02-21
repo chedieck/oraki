@@ -6,8 +6,13 @@ use scraper::Html;
 use regex::Regex;
 use std::fmt;
 use genanki_rs::{Field, Model, Note, Template, Error as AnkiError, Deck};
+use csv::{ReaderBuilder, WriterBuilder};
 
-fn get_model() -> Result<Model, Box<AnkiError>> {
+
+const MAIN_CSV_PATH: &str = "./main.csv";
+
+
+fn get_anki_model() -> Result<Model, Box<AnkiError>> {
     Ok(
         Model::new(
             1607392319,
@@ -47,10 +52,27 @@ impl WordInfo {
         }
     }
 
+    fn other_translations_joined(&self) -> String {
+        self.other_translations.join(", ")
+    }
+
+    fn to_csv_record_string(&self) -> String {
+        format!(
+            "{}|{}|{}|{}|{}|{}|{}",
+            self.search_result,
+            self.search_term,
+            self.title,
+            self.main_translation,
+            self.other_translations_joined().as_str(),
+            self.overview,
+            self.context_phrase.unwrap_or(String::from("")).as_str()
+        )
+    }
+
     fn other_translations_concatenated(&self) -> String {
         format!(
             "({})",
-            self.other_translations.join(", ")
+            self.other_translations_joined()
         )
     }
 }
@@ -240,6 +262,40 @@ async fn get_translation_info(search_term: &str, context_phrase: Option<String>)
     })
 }
 
+fn add_notes_temp()-> Result<(), Box <dyn Error>> {
+    let m = get_anki_model()?;
+    let note = Note::new(
+        m.clone(),
+        vec!["Quesãozão", "Resopntaaa"]
+    )?;
+    let note2 = Note::new(
+        m.clone(),
+        vec!["Quesãozão2", "Resopntaaa2"]
+    )?;
+        // let my_note = ...
+    let mut my_deck = Deck::new(
+        2059400110,
+        "Country Capitals",
+        "Deck for studying country capitals",
+    );
+    my_deck.add_note(note2);
+    my_deck.write_to_file("output-anki-test2.apkg")?;
+    Ok(())
+}
+
+fn append_word_info(word_info: WordInfo) -> Result<(), Box<dyn Error>> {
+    let writer = Writer::from_path(MAIN_CSV_PATH)?;
+    let reader = ReaderBuilder::new()
+        .delimiter(b'|')
+        .from_path(MAIN_CSV_PATH)?;
+    let word_info_string = WordInfo::to_csv_record_string(&word_info);
+    for record in reader.records() {
+        if record? == word_info_string {
+        }
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box <dyn Error>> {
     let args: Vec<String> = env::args().collect();
@@ -255,21 +311,9 @@ async fn main() -> Result<(), Box <dyn Error>> {
 
     }
     let search_term = args[1].as_str();
-    let search_result = get_translation_info(search_term, context_phrase).await?;
-    println!("{search_result}");
-    let m = get_model()?;
-    let note = Note::new(
-        m,
-        vec!["Quesãozão", "Resopntaaa"]
-    )?;
-        // let my_note = ...
-    let mut my_deck = Deck::new(
-        2059400110,
-        "Country Capitals",
-        "Deck for studying country capitals",
-    );
-    my_deck.add_note(note);
-    my_deck.write_to_file("output-anki-test.apkg")?;
+    let result_word_info = get_translation_info(search_term, context_phrase).await?;
+    append_word_info(result_word_info);
+    println!("{result_word_info}");
     Ok(())
 }
 
