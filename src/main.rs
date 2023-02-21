@@ -11,24 +11,37 @@ use csv::{ReaderBuilder, WriterBuilder};
 
 
 const MAIN_CSV_PATH: &str = "./main.csv";
+const MODEL_ID: i64 = 4173289758;
+const DECK_ID: i64 = 8129381912;
+const DECK_NAME: &str = "Searched russian words";
+const DECK_DESCRIPTION: &str = "Words searched using oraki";
+const DEFAULT_EMPTY_VALUE: &str = "-";
 
 
-fn get_anki_model() -> Result<Model, Box<AnkiError>> {
+fn make_anki_model() -> Result<Model, Box<AnkiError>> {
     Ok(
         Model::new(
-            1607392319,
-            "Searched word model",
-            vec![Field::new("Question"), Field::new("Answer")],
+            MODEL_ID,
+            "Searched russian word model",
+            vec![
+                Field::new("search_term"),
+                Field::new("search_result"),
+                Field::new("title"),
+                Field::new("main_translation"),
+                Field::new("other_translations"),
+                Field::new("overview"),
+                Field::new("context_phrase")
+            ],
             vec![Template::new("Card 1")
-            .qfmt("{{Question}}")
-            .afmt(r#"{{FrontSide}}<hr id="answer">{{Answer}}"#)],
+            .qfmt("<p>{{search_term}}({{search_result}})<hr>{{context_phrase}}")
+            .afmt(r#"{{FrontSide}}<hr id="answer">{{main_translation}}<br>{{other_translations}}<br>{{overview}}"#)],
         )
     )
 }
 
 const HEADER_USER_AGENT : &str= "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36";
 
-#[derive(Debug)]
+#[derive(Debug, serde::Deserialize)]
 struct WordInfo {
     search_term:  String,
     search_result: String,
@@ -70,7 +83,7 @@ impl WordInfo {
             self.main_translation,
             self.other_translations_joined(),
             self.overview_in_one_line(),
-            self.context_phrase.as_ref().unwrap_or(&String::from(""))
+            self.context_phrase.as_ref().unwrap_or(&String::from(DEFAULT_EMPTY_VALUE))
         )
     }
 
@@ -221,7 +234,7 @@ fn get_overview_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Er
 
 fn get_other_translations_from_translations_text(basics_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
-    let other_translations_text = _get_class_content_from_html(document, ".tl-also").unwrap_or(String::from(""));
+    let other_translations_text = _get_class_content_from_html(document, ".tl-also").unwrap_or(String::from(DEFAULT_EMPTY_VALUE));
 
     let re = Regex::new("Also<.*>").unwrap();
     Ok(
@@ -269,24 +282,33 @@ async fn get_translation_info(search_term: &str, context_phrase: Option<String>)
     })
 }
 
-fn add_notes_temp()-> Result<(), Box <dyn Error>> {
-    let m = get_anki_model()?;
-    let note = Note::new(
-        m.clone(),
-        vec!["Quesãozão", "Resopntaaa"]
-    )?;
-    let note2 = Note::new(
-        m.clone(),
-        vec!["Quesãozão2", "Resopntaaa2"]
-    )?;
-        // let my_note = ...
+fn add_notes()-> Result<(), Box <dyn Error>> {
+    let mut reader = ReaderBuilder::new()
+        .delimiter(b'|')
+        .from_path(MAIN_CSV_PATH)?;
     let mut my_deck = Deck::new(
-        2059400110,
-        "Country Capitals",
-        "Deck for studying country capitals",
+        DECK_ID,
+        DECK_NAME,
+        DECK_DESCRIPTION,
     );
-    my_deck.add_note(note2);
-    my_deck.write_to_file("output-anki-test2.apkg")?;
+    for record in reader.records() {
+        let result = record?;
+        let word_info: WordInfo = result.deserialize(None)?;
+        let note = Note::new(
+            make_anki_model()?,
+            vec![
+                word_info.search_term.as_str(),
+                word_info.search_result.as_str(),
+                word_info.title.as_str(),
+                word_info.main_translation.as_str(),
+                word_info.other_translations_joined().as_str(),
+                word_info.overview_in_one_line().as_str(),
+                word_info.context_phrase.as_ref().unwrap_or(&String::from(DEFAULT_EMPTY_VALUE))
+            ]
+        )?;
+        my_deck.add_note(note);
+    }
+    my_deck.write_to_file("output.apkg")?;
     Ok(())
 }
 
@@ -316,7 +338,7 @@ fn append_word_info(word_info: &WordInfo) -> Result<(), Box<dyn Error>> {
         word_info.main_translation.as_str(),
         word_info.other_translations_joined().as_str(),
         word_info.overview_in_one_line().as_str(),
-        word_info.context_phrase.as_ref().unwrap_or(&String::from("")).as_str()
+        word_info.context_phrase.as_ref().unwrap_or(&String::from(DEFAULT_EMPTY_VALUE)).as_str()
         ])?;
     Ok(())
 }
@@ -339,6 +361,7 @@ async fn main() -> Result<(), Box <dyn Error>> {
     let result_word_info = get_translation_info(search_term, context_phrase).await?;
     append_word_info(&result_word_info)?;
     println!("{result_word_info}");
+    add_notes()?;
     Ok(())
 }
 
