@@ -83,7 +83,7 @@ impl WordInfo {
             self.main_translation,
             self.other_translations_joined(),
             self.overview_in_one_line(),
-            self.context_phrase.as_ref().unwrap_or(&String::from(DEFAULT_EMPTY_VALUE))
+            self.context_phrase.as_ref().unwrap_or(&String::from(""))
         )
     }
 
@@ -282,7 +282,7 @@ async fn get_translation_info(search_term: &str, context_phrase: Option<String>)
     })
 }
 
-fn add_notes()-> Result<(), Box <dyn Error>> {
+fn create_deck_from_csv()-> Result<(), Box <dyn Error>> {
     let mut reader = ReaderBuilder::new()
         .delimiter(b'|')
         .from_path(MAIN_CSV_PATH)?;
@@ -293,20 +293,22 @@ fn add_notes()-> Result<(), Box <dyn Error>> {
     );
     for record in reader.records() {
         let result = record?;
-        let word_info: WordInfo = result.deserialize(None)?;
-        let note = Note::new(
-            make_anki_model()?,
-            vec![
-                word_info.search_term.as_str(),
-                word_info.search_result.as_str(),
-                word_info.title.as_str(),
-                word_info.main_translation.as_str(),
-                word_info.other_translations_joined().as_str(),
-                word_info.overview_in_one_line().as_str(),
-                word_info.context_phrase.as_ref().unwrap_or(&String::from(DEFAULT_EMPTY_VALUE))
-            ]
-        )?;
-        my_deck.add_note(note);
+        let context_phrase = result.get(6).unwrap();
+        if !context_phrase.is_empty() {
+            let note = Note::new(
+                make_anki_model()?,
+                vec![
+                result.get(0).unwrap(),
+                result.get(1).unwrap(),
+                result.get(2).unwrap(),
+                result.get(3).unwrap(),
+                result.get(4).unwrap(),
+                result.get(5).unwrap(),
+                context_phrase
+                ]
+            )?;
+            my_deck.add_note(note);
+        }
     }
     my_deck.write_to_file("output.apkg")?;
     Ok(())
@@ -338,7 +340,7 @@ fn append_word_info(word_info: &WordInfo) -> Result<(), Box<dyn Error>> {
         word_info.main_translation.as_str(),
         word_info.other_translations_joined().as_str(),
         word_info.overview_in_one_line().as_str(),
-        word_info.context_phrase.as_ref().unwrap_or(&String::from(DEFAULT_EMPTY_VALUE)).as_str()
+        word_info.context_phrase.as_ref().unwrap_or(&String::from("")).as_str()
         ])?;
     Ok(())
 }
@@ -361,7 +363,7 @@ async fn main() -> Result<(), Box <dyn Error>> {
     let result_word_info = get_translation_info(search_term, context_phrase).await?;
     append_word_info(&result_word_info)?;
     println!("{result_word_info}");
-    add_notes()?;
+    create_deck_from_csv()?;
     Ok(())
 }
 
