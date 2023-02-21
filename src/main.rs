@@ -5,6 +5,20 @@ use std::env;
 use scraper::Html;
 use regex::Regex;
 use std::fmt;
+use genanki_rs::{Field, Model, Note, Template, Error as AnkiError, Deck};
+
+fn get_model() -> Result<Model, Box<AnkiError>> {
+    Ok(
+        Model::new(
+            1607392319,
+            "Searched word model",
+            vec![Field::new("Question"), Field::new("Answer")],
+            vec![Template::new("Card 1")
+            .qfmt("{{Question}}")
+            .afmt(r#"{{FrontSide}}<hr id="answer">{{Answer}}"#)],
+        )
+    )
+}
 
 const HEADER_USER_AGENT : &str= "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36";
 
@@ -12,6 +26,7 @@ const HEADER_USER_AGENT : &str= "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537
 struct WordInfo {
     search_term:  String,
     search_result: String,
+    context_phrase: Option<String>,
     title: String,
     main_translation: String,
     other_translations: Vec<String>,
@@ -50,7 +65,15 @@ impl fmt::Display for WordInfo {
             self.other_translations_concatenated(),
             "-".repeat(self.max_field_len()),
             self.overview,
-        )
+        )?;
+        if let Some(c) = &self.context_phrase {
+            write!(
+                f,
+                "\nContext: {}",
+                c,
+            )?;
+        }
+        Ok(())
     }
 }
 
@@ -188,7 +211,7 @@ fn get_main_translation_from_translations_text(basics_text: &str) -> Result<Stri
     _get_class_content_from_html(document, ".tl")
 }
 
-async fn get_translation_info(search_term: &str) -> Result<WordInfo, Box<dyn Error>> {
+async fn get_translation_info(search_term: &str, context_phrase: Option<String>) -> Result<WordInfo, Box<dyn Error>> {
     let search_result = match get_search_result(search_term).await {
         Ok(result) =>
             match result {
@@ -213,19 +236,41 @@ async fn get_translation_info(search_term: &str) -> Result<WordInfo, Box<dyn Err
         main_translation,
         other_translations,
         overview,
+        context_phrase
     })
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box <dyn Error>> {
     let args: Vec<String> = env::args().collect();
-    if args.is_empty() { 
-        println!("No search string provided.");
-        return Ok(())
-    };
+    let mut context_phrase:  Option<String> = None;
+    match args.len() {
+        0 => return Ok(()),
+        1 => {
+            println!("No search string provided.");
+            return Ok(())
+        },
+        2 => {},
+        _ => context_phrase = Some(args[2..].join(" ")),
+
+    }
     let search_term = args[1].as_str();
-    let search_result = get_translation_info(search_term).await?;
+    let search_result = get_translation_info(search_term, context_phrase).await?;
     println!("{search_result}");
+    let m = get_model()?;
+    let note = Note::new(
+        m,
+        vec!["Quesãozão", "Resopntaaa"]
+    )?;
+        // let my_note = ...
+    let mut my_deck = Deck::new(
+        2059400110,
+        "Country Capitals",
+        "Deck for studying country capitals",
+    );
+    my_deck.add_note(note);
+    my_deck.write_to_file("output-anki-test.apkg")?;
     Ok(())
 }
 
+// WIP check search_term in context phrase
