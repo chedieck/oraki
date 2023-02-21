@@ -305,7 +305,6 @@ fn append_word_info(word_info: &WordInfo) -> Result<(), Box<dyn Error>> {
     let word_info_string = word_info.to_csv_string_record_slice();
     for record in reader.records() {
         let result = record?;
-        println!("comparing:\n{}\n{}", result.as_slice(), word_info_string);
         if result.as_slice() == word_info_string {
             return Ok(())
         }
