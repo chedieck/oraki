@@ -2,6 +2,7 @@ use reqwest::header::USER_AGENT;
 use serde_json::Value;
 use std::error::Error;
 use std::env;
+use std::fs::OpenOptions;
 use scraper::Html;
 use regex::Regex;
 use std::fmt;
@@ -56,16 +57,20 @@ impl WordInfo {
         self.other_translations.join(", ")
     }
 
-    fn to_csv_record_string(&self) -> String {
+    fn overview_in_one_line(&self) -> String {
+        self.overview.replace('\n', "; ")
+    }
+
+    fn to_csv_string_record_slice(&self) -> String {
         format!(
-            "{}|{}|{}|{}|{}|{}|{}",
+            "{}{}{}{}{}{}{}",
             self.search_result,
             self.search_term,
             self.title,
             self.main_translation,
-            self.other_translations_joined().as_str(),
-            self.overview,
-            self.context_phrase.unwrap_or(String::from("")).as_str()
+            self.other_translations_joined(),
+            self.overview_in_one_line(),
+            self.context_phrase.as_ref().unwrap_or(&String::from(""))
         )
     }
 
@@ -216,7 +221,7 @@ fn get_overview_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Er
 
 fn get_other_translations_from_translations_text(basics_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
     let document = Html::parse_fragment(basics_text);
-    let other_translations_text = _get_class_content_from_html(document, ".tl-also")?;
+    let other_translations_text = _get_class_content_from_html(document, ".tl-also").unwrap_or(String::from(""));
 
     let re = Regex::new("Also<.*>").unwrap();
     Ok(
@@ -285,16 +290,35 @@ fn add_notes_temp()-> Result<(), Box <dyn Error>> {
     Ok(())
 }
 
-fn append_word_info(word_info: WordInfo) -> Result<(), Box<dyn Error>> {
-    let writer = Writer::from_path(MAIN_CSV_PATH)?;
-    let reader = ReaderBuilder::new()
+fn append_word_info(word_info: &WordInfo) -> Result<(), Box<dyn Error>> {
+    let write_file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(MAIN_CSV_PATH)
+        .unwrap();
+    let mut writer = WriterBuilder::new()
+        .delimiter(b'|')
+        .from_writer(write_file);
+    let mut reader = ReaderBuilder::new()
         .delimiter(b'|')
         .from_path(MAIN_CSV_PATH)?;
-    let word_info_string = WordInfo::to_csv_record_string(&word_info);
+    let word_info_string = word_info.to_csv_string_record_slice();
     for record in reader.records() {
-        if record? == word_info_string {
+        let result = record?;
+        println!("comparing:\n{}\n{}", result.as_slice(), word_info_string);
+        if result.as_slice() == word_info_string {
+            return Ok(())
         }
     }
+    writer.write_record([
+        word_info.search_result.as_str(),
+        word_info.search_term.as_str(),
+        word_info.title.as_str(),
+        word_info.main_translation.as_str(),
+        word_info.other_translations_joined().as_str(),
+        word_info.overview_in_one_line().as_str(),
+        word_info.context_phrase.as_ref().unwrap_or(&String::from("")).as_str()
+        ])?;
     Ok(())
 }
 
@@ -314,7 +338,7 @@ async fn main() -> Result<(), Box <dyn Error>> {
     }
     let search_term = args[1].as_str();
     let result_word_info = get_translation_info(search_term, context_phrase).await?;
-    append_word_info(result_word_info);
+    append_word_info(&result_word_info)?;
     println!("{result_word_info}");
     Ok(())
 }
