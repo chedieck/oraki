@@ -35,8 +35,8 @@ fn make_anki_model() -> Result<Model, Box<AnkiError>> {
                 Field::new("context_phrase")
             ],
             vec![Template::new("Card 1")
-            .qfmt("<p class=\"search_term\">{{search_term}}</p>({{search_result}})<hr>{{context_phrase}}")
-            .afmt(r#"{{FrontSide}}<hr id="answer">{{main_translation}}<br>{{other_translations}}<br><div class=\"overview\">{{overview}}</div>"#)],
+            .qfmt("<span class=\"search_term\">{{search_term}}</span> ({{search_result}})<hr>{{context_phrase}}")
+            .afmt(r#"{{FrontSide}}<p>{{title}}</p><hr id="answer"><span class=\"main_translation\">{{main_translation}}</span><br>{{other_translations}}<br><div class=\"overview\">{{overview}}</div>"#)],
         )
         .css(custom_css)
     )
@@ -288,7 +288,7 @@ async fn get_translation_info(search_term: &str, context_phrase: Option<String>)
 fn create_note_from_result(model: Model, result: csv::StringRecord) -> Result<Note, Box<AnkiError>> {
     let context_phrase = result.get(6).unwrap();
     let search_term = result.get(0).unwrap();
-    let context_phrase = context_phrase.replace(search_term, format!("<p class=\"search_term\">{search_term}</p>").as_str());
+    let context_phrase = context_phrase.replace(search_term, format!("<span class=\"search_term\">{search_term}</span>").as_str());
     Ok(
         Note::new(
             model,
