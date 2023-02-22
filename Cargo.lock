@@ -972,6 +972,7 @@ dependencies = [
  "reqwest",
  "scraper",
  "select",
+ "serde",
  "serde_json",
  "soup",
  "tokio",
