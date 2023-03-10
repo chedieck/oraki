@@ -10,10 +10,11 @@ use genanki_rs::{Field, Model, Note, Template, Error as AnkiError, Deck};
 use csv::{ReaderBuilder, WriterBuilder};
 
 
-const MAIN_CSV_PATH: &str = "./main.csv";
-const MAIN_CSS_PATH: &str = "./main.css";
 const MODEL_ID: i64 = 4173289758;
 const DECK_ID: i64 = 8129381912;
+const MAIN_CSV_PATH: &str = "/home/ttv1/codes/oraki/main.csv";
+const MAIN_CSS_PATH: &str = "/home/ttv1/codes/oraki/main.css";
+const MAIN_OUTPUT_ANKI_PATH: &str = "/home/ttv1/codes/oraki/output.apkg";
 const DECK_NAME: &str = "Searched russian words";
 const DECK_DESCRIPTION: &str = "Words searched using oraki";
 const DEFAULT_EMPTY_VALUE: &str = "-";
@@ -322,7 +323,7 @@ fn create_deck_from_csv()-> Result<(), Box <dyn Error>> {
             my_deck.add_note(note);
         }
     }
-    my_deck.write_to_file("output.apkg")?;
+    my_deck.write_to_file(MAIN_OUTPUT_ANKI_PATH)?;
     Ok(())
 }
 
