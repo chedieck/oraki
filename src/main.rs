@@ -317,11 +317,8 @@ fn create_deck_from_csv()-> Result<(), Box <dyn Error>> {
     );
     for record in reader.records() {
         let result = record?;
-        let context_phrase = result.get(6).unwrap();
-        if !context_phrase.is_empty() {
-            let note = create_note_from_result(make_anki_model()?, result)?;
-            my_deck.add_note(note);
-        }
+        let note = create_note_from_result(make_anki_model()?, result)?;
+        my_deck.add_note(note);
     }
     my_deck.write_to_file(MAIN_OUTPUT_ANKI_PATH)?;
     Ok(())
