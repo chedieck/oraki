@@ -363,8 +363,12 @@ async fn main() -> Result<(), Box <dyn Error>> {
     let args: Vec<String> = env::args().collect();
     let mut context_phrase:  Option<String> = None;
     match args.len() {
-        0 => return Ok(()),
+        0 => return Ok(()), // HELP MESSAGE WIP
         1 => {
+            if args[1].as_str() == "-c" {
+                create_deck_from_csv()?;
+                return Ok(())
+            }
             println!("No search string provided.");
             return Ok(())
         },
@@ -376,6 +380,5 @@ async fn main() -> Result<(), Box <dyn Error>> {
     let result_word_info = get_translation_info(search_term, context_phrase).await?;
     append_word_info(&result_word_info)?;
     println!("{result_word_info}");
-    create_deck_from_csv()?;
     Ok(())
 }
