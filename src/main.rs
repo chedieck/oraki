@@ -350,6 +350,7 @@ fn create_deck_from_csv()-> Result<(), Box <dyn Error>> {
     );
     for record in reader.records() {
         let result = record?;
+        println!("Creating note for {}...", &result[2]);
         let note = create_note_from_result(make_anki_model()?, result)?;
         my_deck.add_note(note);
     }
