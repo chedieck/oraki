@@ -66,13 +66,16 @@ fn make_anki_model() -> Result<Model, Box<AnkiError>> {
         Field::new("context_phrase")
         ],
         vec![Template::new("Card 1")
-        .qfmt("<span class=\"search_term\">{{search_result}}</span> ({{search_term}})<hr>{{context_phrase}}")
-        .afmt(r#"{{FrontSide}}<p>{{title}}</p><hr id="answer"><span class=\"main_translation\">{{main_translation}}</span><br>{{other_translations}}<br><div class=\"overview\">{{overview}}</div>"#)],
+        .qfmt("<span class=\"search_result\">{{search_result}}</span> ({{search_term}})<hr>{{context_phrase}}")
+        .afmt(r#"{{FrontSide}}<p>{{title}}</p><hr id="answer"><span class="main_translation">{{main_translation}}</span><br>{{other_translations}}<br><div class="overview">{{overview}}</div>"#)],
     );
     let custom_css_path = get_main_css_path().unwrap();
     match custom_css_path {
-        Some(p) => Ok(model.css(p.display())),
-        None => Ok(model),
+        Some(p) => Ok(model.css(std::fs::read_to_string(p).unwrap())),
+        None => {
+            println!("No css found.");
+            Ok(model)
+        },
     }
 }
 
