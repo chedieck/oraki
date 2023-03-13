@@ -1,7 +1,9 @@
 use reqwest::header::USER_AGENT;
 use serde_json::Value;
 use std::error::Error;
+use std::io::prelude::*;
 use std::env;
+use std::path;
 use std::fs::OpenOptions;
 use scraper::Html;
 use regex::Regex;
@@ -12,35 +14,66 @@ use csv::{ReaderBuilder, WriterBuilder};
 
 const MODEL_ID: i64 = 4173289758;
 const DECK_ID: i64 = 8129381912;
-const MAIN_CSV_PATH: &str = "/home/ttv1/codes/oraki/main.csv";
-const MAIN_CSS_PATH: &str = "/home/ttv1/codes/oraki/main.css";
-const MAIN_OUTPUT_ANKI_PATH: &str = "/home/ttv1/codes/oraki/output.apkg";
 const DECK_NAME: &str = "Searched russian words";
 const DECK_DESCRIPTION: &str = "Words searched using oraki";
 const DEFAULT_EMPTY_VALUE: &str = "-";
 
+fn get_or_crate_data_dir() -> Result<path::PathBuf, Box<dyn Error>>{
+        let dir_path = dirs::data_dir().unwrap().join("oraki/");
+        if !dir_path.is_dir() {
+            std::fs::create_dir(&dir_path)?;
+        }
+        Ok(dir_path)
+}
+
+fn get_main_output_anki_path() -> Result<path::PathBuf, Box<dyn Error>>{
+    let dir_path = get_or_crate_data_dir()?;
+    let file_path = dir_path.join("output.apkg");
+    Ok(file_path)
+}
+
+fn get_main_css_path() -> Result<Option<path::PathBuf>, Box<dyn Error>>{
+        let dir_path = get_or_crate_data_dir()?;
+        let file_path = dir_path.join("main.css");
+        if !file_path.is_file() {
+            return Ok(None)
+        }
+        Ok(Some(file_path))
+}
+
+fn get_main_csv_path() -> Result<path::PathBuf, Box<dyn Error>>{
+        let dir_path = get_or_crate_data_dir()?;
+        let file_path = dir_path.join("main.csv");
+        if !file_path.is_file() {
+            let header_string = "search_term|search_result|title|main_translation|other_translations|overview|context_phrase";
+            let mut file = std::fs::File::create(&file_path)?;
+            file.write_all(header_string.as_bytes())?;
+        }
+        Ok(file_path)
+}
 
 fn make_anki_model() -> Result<Model, Box<AnkiError>> {
-    let custom_css = std::fs::read_to_string(MAIN_CSS_PATH).unwrap();
-    Ok(
-        Model::new(
-            MODEL_ID,
-            "Searched russian word model",
-            vec![
-                Field::new("search_term"),
-                Field::new("search_result"),
-                Field::new("title"),
-                Field::new("main_translation"),
-                Field::new("other_translations"),
-                Field::new("overview"),
-                Field::new("context_phrase")
-            ],
-            vec![Template::new("Card 1")
-            .qfmt("<span class=\"search_term\">{{search_term}}</span> ({{search_result}})<hr>{{context_phrase}}")
-            .afmt(r#"{{FrontSide}}<p>{{title}}</p><hr id="answer"><span class=\"main_translation\">{{main_translation}}</span><br>{{other_translations}}<br><div class=\"overview\">{{overview}}</div>"#)],
-        )
-        .css(custom_css)
-    )
+    let model = Model::new(
+        MODEL_ID,
+        "Searched russian word model",
+        vec![
+        Field::new("search_term"),
+        Field::new("search_result"),
+        Field::new("title"),
+        Field::new("main_translation"),
+        Field::new("other_translations"),
+        Field::new("overview"),
+        Field::new("context_phrase")
+        ],
+        vec![Template::new("Card 1")
+        .qfmt("<span class=\"search_term\">{{search_result}}</span> ({{search_term}})<hr>{{context_phrase}}")
+        .afmt(r#"{{FrontSide}}<p>{{title}}</p><hr id="answer"><span class=\"main_translation\">{{main_translation}}</span><br>{{other_translations}}<br><div class=\"overview\">{{overview}}</div>"#)],
+    );
+    let custom_css_path = get_main_css_path().unwrap();
+    match custom_css_path {
+        Some(p) => Ok(model.css(p.display())),
+        None => Ok(model),
+    }
 }
 
 const HEADER_USER_AGENT : &str= "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36";
@@ -309,7 +342,7 @@ fn create_note_from_result(model: Model, result: csv::StringRecord) -> Result<No
 fn create_deck_from_csv()-> Result<(), Box <dyn Error>> {
     let mut reader = ReaderBuilder::new()
         .delimiter(b'|')
-        .from_path(MAIN_CSV_PATH)?;
+        .from_path(get_main_csv_path()?)?;
     let mut my_deck = Deck::new(
         DECK_ID,
         DECK_NAME,
@@ -320,7 +353,7 @@ fn create_deck_from_csv()-> Result<(), Box <dyn Error>> {
         let note = create_note_from_result(make_anki_model()?, result)?;
         my_deck.add_note(note);
     }
-    my_deck.write_to_file(MAIN_OUTPUT_ANKI_PATH)?;
+    my_deck.write_to_file(get_main_output_anki_path().unwrap().to_str().unwrap())?;
     Ok(())
 }
 
@@ -328,14 +361,14 @@ fn append_word_info(word_info: &WordInfo) -> Result<(), Box<dyn Error>> {
     let write_file = OpenOptions::new()
         .write(true)
         .append(true)
-        .open(MAIN_CSV_PATH)
+        .open(get_main_csv_path()?)
         .unwrap();
     let mut writer = WriterBuilder::new()
         .delimiter(b'|')
         .from_writer(write_file);
     let mut reader = ReaderBuilder::new()
         .delimiter(b'|')
-        .from_path(MAIN_CSV_PATH)?;
+        .from_path(get_main_csv_path()?)?;
     let word_info_string = word_info.to_csv_string_record_slice();
     for record in reader.records() {
         let result = record?;
