@@ -388,21 +388,29 @@ fn append_word_info(word_info: &WordInfo) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn help() {
+    println!("Usage: oraki [search_query] [...context phrase]");
+    println!("-------------------------------------------------------------------");
+    println!("[search_query] can be both english or russian;");
+    println!("All the subsequent arguments will be the [...context phrase];");
+    println!("To compile the anki deck, run `oraki -c` or `oraki --compile`.");
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box <dyn Error>> {
     let args: Vec<String> = env::args().collect();
     let mut context_phrase:  Option<String> = None;
     match args.len() {
-        0 => return Ok(()), // HELP MESSAGE WIP
         1 => {
-            if args[1].as_str() == "-c" {
+            help();
+            return Ok(())
+        },
+        2 => {
+            if ["-c", "--compile"].contains(&args[1].as_str()) {
                 create_deck_from_csv()?;
                 return Ok(())
             }
-            println!("No search string provided.");
-            return Ok(())
         },
-        2 => {},
         _ => context_phrase = Some(args[2..].join(" ")),
 
     }
