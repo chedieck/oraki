@@ -32,9 +32,9 @@ fn get_main_output_anki_path() -> Result<path::PathBuf, Box<dyn Error>>{
     Ok(file_path)
 }
 
-fn get_main_css_path() -> Result<Option<path::PathBuf>, Box<dyn Error>>{
+fn get_style_css_path() -> Result<Option<path::PathBuf>, Box<dyn Error>>{
         let dir_path = get_or_crate_data_dir()?;
-        let file_path = dir_path.join("main.css");
+        let file_path = dir_path.join("style.css");
         if !file_path.is_file() {
             return Ok(None)
         }
@@ -69,7 +69,7 @@ fn make_anki_model() -> Result<Model, Box<AnkiError>> {
         .qfmt("<span class=\"search_result\">{{search_result}}</span> ({{search_term}})<hr>{{context_phrase}}")
         .afmt(r#"{{FrontSide}}<p>{{title}}</p><hr id="answer"><span class="main_translation">{{main_translation}}</span><br>{{other_translations}}<br><div class="overview">{{overview}}</div>"#)],
     );
-    let custom_css_path = get_main_css_path().unwrap();
+    let custom_css_path = get_style_css_path().unwrap();
     match custom_css_path {
         Some(p) => Ok(model.css(std::fs::read_to_string(p).unwrap())),
         None => {
