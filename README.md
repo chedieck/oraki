@@ -1,6 +1,6 @@
 # Oraki
 
-Search queries on en.OpenRussian.org and create an Anki deck with the results.
+Search queries on [OpenRussian](en.openrussian.org) and create an Anki deck with the results.
 
 
 Usage
