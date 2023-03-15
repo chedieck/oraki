@@ -5,9 +5,31 @@
  color: black;
 }
 
+.card.nightMode {
+ color: white;
+}
+
 .search_result {
  color: blue;
 }
+
+.search_result.nightMode {
+ color: yellow;
+}
+
+.title {
+ font-size: 24px;
+ color: #00a;
+}
+
+.title.nightMode {
+    color: #ff4
+}
+
 .overview {
- color: green;
+ color: #222;
+}
+
+.overview.nightMode {
+ color: #ddd;
 }

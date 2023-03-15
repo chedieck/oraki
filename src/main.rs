@@ -17,8 +17,8 @@ const DECK_ID: i64 = 8129381912;
 const DECK_NAME: &str = "Oraki searched words";
 const DECK_DESCRIPTION: &str = "Words searched using oraki";
 const DEFAULT_EMPTY_VALUE: &str = "-";
-const Q_FORMAT: &str = r#"<span class="search_result">{{search_result}}</span> ({{search_term}})<hr>{{context_phrase}}"#;
-const A_FORMAT: &str = r#"{{FrontSide}}<p>{{title}}</p><hr id="answer"><span class="main_translation">{{main_translation}}</span><br>{{other_translations}}<br><div class="overview">{{overview}}</div>"#;
+const Q_FORMAT: &str = r#"<span class="search_result">{{search_result}}</span> <hr>{{context_phrase}}"#;
+const A_FORMAT: &str = r#"{{FrontSide}}<p class="title">{{title}}</p> <p>({{search_term}})</p><hr id="answer"><span class="main_translation">{{main_translation}}</span><br>{{other_translations}}<br><div class="overview">{{overview}}</div>"#;
 
 fn get_or_crate_data_dir() -> Result<path::PathBuf, Box<dyn Error>>{
         let dir_path = dirs::data_dir().unwrap().join("oraki/");
