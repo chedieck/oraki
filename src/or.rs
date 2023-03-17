@@ -17,6 +17,7 @@ pub struct TranslationInfo {
     search_query: String,
     search_result: String,
     context_phrase: Option<String>,
+    context_phrase_translation: Option<String>,
     title: String,
     main_translation: String,
     other_translations: Vec<String>,
@@ -51,14 +52,15 @@ impl TranslationInfo {
 
     fn to_csv_string_record_slice(&self) -> String {
         format!(
-            "{}{}{}{}{}{}{}",
+            "{}{}{}{}{}{}{}{}",
             self.search_query,
             self.search_result,
             self.title,
             self.main_translation,
             self.other_translations_joined(),
             self.overview_in_one_line(),
-            self.context_phrase.as_ref().unwrap_or(&String::from(""))
+            self.context_phrase.as_ref().unwrap_or(&String::from("")),
+            self.context_phrase_translation.as_ref().unwrap_or(&String::from(""))
         )
     }
 
@@ -79,7 +81,10 @@ impl fmt::Display for TranslationInfo {
             self.overview,
         )?;
         if let Some(c) = &self.context_phrase {
-            write!(f, "\nContext: {}", c,)?;
+            write!(f, "\nContext phrase:{}", c,)?;
+        }
+        if let Some(ct) = &self.context_phrase_translation {
+            write!(f, "\n{}", ct,)?;
         }
         Ok(())
     }
@@ -162,7 +167,7 @@ fn get_selector_text_from_bigger_text(selector_str: &str, bigger_text: &str) -> 
     let document = Html::parse_document(bigger_text);
     _get_class_content_from_html(document, selector_str)
 }
-fn get_first_sentence_from_response_text(response_text: &str) -> Result<String, Box<dyn Error>> {
+fn get_first_sentence_and_translation_from_response_text(response_text: &str) -> Result<(String, String), Box<dyn Error>> {
     let sentences_text = get_selector_text_from_bigger_text("ul.sentences > li", response_text)?;
     let ru_text = get_selector_text_from_bigger_text(".ru", &sentences_text)?;
     let ru_html = Html::parse_fragment(ru_text.as_str());
@@ -172,8 +177,14 @@ fn get_first_sentence_from_response_text(response_text: &str) -> Result<String, 
         .flat_map(|x| x.text()) // here it maybe text
         .collect::<Vec<&str>>()
         .join(" ");
+
+
+    let en_sentence = "WIP".to_string();
     Ok(
-        ru_sentence
+        (
+            ru_sentence,
+            en_sentence
+        )
     )
 }
 
@@ -226,10 +237,12 @@ pub async fn get_translation_info(
     let response_text = get_search_result_response_text(&search_result).await?;
 
     let basics_text = get_selector_text_from_bigger_text(".basics", response_text.as_str())?;
+    let mut context_phrase_translation = None;
     if context_phrase.is_none() {
-        let first_sentence_result = get_first_sentence_from_response_text(response_text.as_str());
+        let first_sentence_result = get_first_sentence_and_translation_from_response_text(response_text.as_str());
         if let Ok(first_sentence) = first_sentence_result {
-            context_phrase = Some(first_sentence)
+            context_phrase = Some(first_sentence.0);
+            context_phrase_translation = Some(first_sentence.1);
         }
     }
     let title = get_selector_text_from_bigger_text(".bare span", basics_text.as_str())?;
@@ -248,6 +261,7 @@ pub async fn get_translation_info(
         other_translations,
         overview,
         context_phrase,
+        context_phrase_translation,
     })
 }
 pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<(), Box<dyn Error>> {
@@ -300,6 +314,11 @@ pub fn append_translation_info(translation_info: &TranslationInfo) -> Result<(),
         translation_info.overview_in_one_line().as_str(),
         translation_info
             .context_phrase
+            .as_ref()
+            .unwrap_or(&String::from(""))
+            .as_str(),
+        translation_info
+            .context_phrase_translation
             .as_ref()
             .unwrap_or(&String::from(""))
             .as_str(),

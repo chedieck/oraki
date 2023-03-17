@@ -9,7 +9,7 @@ const DECK_NAME: &str = "Oraki searched words";
 const DECK_DESCRIPTION: &str = "Words searched using oraki";
 const Q_FORMAT: &str =
     r#"<span class="search_result">{{search_result}}</span> <hr>{{context_phrase}}"#;
-const A_FORMAT: &str = r#"{{FrontSide}}<p class="title">{{title}}</p> <p>({{search_query}})</p><hr id="answer"><span class="main_translation">{{main_translation}}</span><br>{{other_translations}}<br><div class="overview">{{overview}}</div>"#;
+const A_FORMAT: &str = r#"{{FrontSide}}<p class="title">{{title}}</p><p>{{context_phrase_translation}}</p><p>({{search_query}})</p><hr id="answer"><span class="main_translation">{{main_translation}}</span><br>{{other_translations}}<br><div class="overview">{{overview}}</div>"#;
 
 fn make_anki_model() -> Result<Model, Box<AnkiError>> {
     let model = Model::new(
@@ -23,6 +23,7 @@ fn make_anki_model() -> Result<Model, Box<AnkiError>> {
             Field::new("other_translations"),
             Field::new("overview"),
             Field::new("context_phrase"),
+            Field::new("context_phrase_translation"),
         ],
         vec![Template::new("Card 1").qfmt(Q_FORMAT).afmt(A_FORMAT)],
     );
@@ -56,6 +57,7 @@ fn create_note_from_result(
             result.get(4).unwrap(),
             result.get(5).unwrap(),
             context_phrase.as_str(),
+            result.get(7).unwrap(),
         ],
     )
     .unwrap_or_else(|_| panic!("Could not create note from {}", result.as_slice()))
