@@ -1,5 +1,4 @@
 use crate::anki::create_deck_from_csv;
-use crate::or::{append_word_info, get_translation_info};
 use std::env;
 use std::error::Error;
 
@@ -33,8 +32,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         _ => context_phrase = Some(args[2..].join(" ")),
     }
     let search_term = args[1].as_str();
-    let result_word_info = get_translation_info(search_term, context_phrase).await?;
-    append_word_info(&result_word_info)?;
+    let result_word_info = or::get_translation_info(search_term, context_phrase).await?;
+    or::append_word_info(&result_word_info)?;
     println!("{result_word_info}");
     Ok(())
 }
