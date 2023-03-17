@@ -10,16 +10,21 @@ After installing the program, running for example:
 ```
 $ oraki нежны
 ```
-will output:
+will output something like:
 
 ```
-не́жный
-tender
-(delicate, loving, affectionate, fond)
---------------------------------------
-adjective
-adverb не́жно
-somewhat often used word (top 3,000)
+┌────────────────────────────────────────┐
+│                 не́жный                 │
+│                 tender                 │
+│ (delicate, loving, affectionate, fond) │
+│────────────────────────────────────────│
+│               adjective                │
+│              adverb не́жно              │
+│  somewhat often used word (top 3,000)  │
+└────────────────────────────────────────┘
+
+Сча́стье - не́жный цвето́к.
+Happiness is a delicate flower.
 ```
 
 You can search in english too:
@@ -28,13 +33,20 @@ $ oraki knife
 ```
 will output:
 ```
-нож
-knife
-(table-knife, penknife, clasp-knife)
-------------------------------------
-noun, masculine, inanimate
-somewhat often used word (top 2,000)
+┌──────────────────────────────────────┐
+│                 нож                  │
+│                knife                 │
+│ (table-knife, penknife, clasp-knife) │
+│──────────────────────────────────────│
+│      noun, masculine, inanimate      │
+│ somewhat often used word (top 2,000) │
+└──────────────────────────────────────┘
+
+Ле́звие э́того ножа́ очень о́строе.
+The knife has a keen blade.
 ```
+
+Every search is saved so that later you can create a Anki deck with them. For that reason, you can also run oraki on a list of words with  `oraki -f path/to/file`. An example of such a file is available at `extra/example.list`.
 
 Anki
 ---
@@ -50,31 +62,11 @@ Every search you make is saved on `$HOME/.local/share/oraki/main.csv`. This file
 </p>
 
 Things to notice:
-- The card "question" is the result of the search;
-- The answer in the back includes the stressed syllable;
-- In parenthesis is the search query.
+- The card "question" is the result of the search + the russian phrase if it exists;
+- The answer in the back has the word with the stressed syllable marker right before the search query (in parenthesis)
 
+The deck then is saved on `~/.local/share/oraki/output.apkg` and can simply be imported to anki. Every time you do that, old cards will mantain their data, new ones will be added.
 
-Context phrase
----
-
-Maybe you want to have a phrase to give context to the searched word. All other arguments after the search query are parsed as the context phrase, so you can run something like: `oraki красивая Она очень красивая девушка.`. Here is the result
-
-<p align="center">Front:</p>
-<p align="center">
-<img width="600" src="https://user-images.githubusercontent.com/21281174/225175233-95878e2a-54e5-4341-8470-d055c9b3f29b.png">
-</p>
-<p align="center">Back:</p>
-<p align="center">
-<img width="600" src="https://user-images.githubusercontent.com/21281174/225175200-2f41411b-6495-470a-b3b8-8e2161a74f58.png">
-</p>
-
-
-
-
-The deck is saved in `$HOME/.local/share/oraki/output.apkg`. You can then import the file with anki, study it, make new search queries with `oraki <query>`, export it again with `oraki -c`, import it again on Anki and it will update the deck with the new cards.
-
-For a more simple approach into creating Anki cards from sentences, you can run `oraki -f path/to/file`. An example of such a file is available at `extra/example.list`.
 
 Configuration
 ---
@@ -88,6 +80,6 @@ Clone the repo, go into the directory and run `make install`.
 
 TODO
 ---
-- [ ] Save all main translations, not the first one
 - [x] Create function to do many queries from a file
-- [ ] Get context phrase when not provided and it exists
+- [x] Get context phrase when not provided and it exists
+- [ ] Remove support for custom phrase
