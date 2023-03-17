@@ -76,7 +76,7 @@ The deck is saved in `$HOME/.local/share/oraki/output.apkg`. You can then import
 
 Configuration
 ---
-There is a CSS file at `extra/style.css`, you can customize it together with the constants `Q_FORMAT` and `A_FORMAT`, to change the question and answer style, respectively, and update it with `make install`.
+There is a CSS file at `extra/style.css`, you can customize it together with the HTML constants `Q_FORMAT` and `A_FORMAT` at `src/anki.rs`, to change the cards style, and update it with `make install`.
 
 
 Installing:
