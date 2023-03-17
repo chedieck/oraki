@@ -162,6 +162,20 @@ fn get_selector_text_from_bigger_text(selector_str: &str, bigger_text: &str) -> 
     let document = Html::parse_document(bigger_text);
     _get_class_content_from_html(document, selector_str)
 }
+fn get_first_sentence_from_response_text(response_text: &str) -> Result<String, Box<dyn Error>> {
+    let sentences_text = get_selector_text_from_bigger_text("ul.sentences > li", response_text)?;
+    let ru_text = get_selector_text_from_bigger_text(".ru", &sentences_text)?;
+    let ru_html = Html::parse_fragment(ru_text.as_str());
+    let a_selector = scraper::Selector::parse("a").unwrap();
+    let ru_sentence = ru_html
+        .select(&a_selector)
+        .flat_map(|x| x.text()) // here it maybe text
+        .collect::<Vec<&str>>()
+        .join(" ");
+    Ok(
+        ru_sentence
+    )
+}
 
 fn get_overview_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
     let overview_html_text = get_selector_text_from_bigger_text(".overview", basics_text)?;
@@ -195,7 +209,7 @@ fn get_other_translations_from_translations_text(
 
 pub async fn get_translation_info(
     search_query: &str,
-    context_phrase: Option<String>,
+    mut context_phrase: Option<String>,
 ) -> Result<TranslationInfo, Box<dyn Error>> {
     let search_result = match get_search_result(search_query).await {
         Ok(result) => match result {
@@ -210,9 +224,14 @@ pub async fn get_translation_info(
         }
     };
     let response_text = get_search_result_response_text(&search_result).await?;
-    dbg!("{}", &response_text);
 
     let basics_text = get_selector_text_from_bigger_text(".basics", response_text.as_str())?;
+    if context_phrase.is_none() {
+        let first_sentence_result = get_first_sentence_from_response_text(response_text.as_str());
+        if let Ok(first_sentence) = first_sentence_result {
+            context_phrase = Some(first_sentence)
+        }
+    }
     let title = get_selector_text_from_bigger_text(".bare span", basics_text.as_str())?;
     let overview = get_overview_from_basics_text(basics_text.as_str())?;
 
@@ -220,6 +239,7 @@ pub async fn get_translation_info(
     let main_translation = get_selector_text_from_bigger_text(".tl", translations_text.as_str())?;
     let other_translations =
         get_other_translations_from_translations_text(translations_text.as_str())?;
+
     Ok(TranslationInfo {
         search_query: String::from(search_query),
         search_result,
