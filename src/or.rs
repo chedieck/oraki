@@ -158,24 +158,13 @@ fn _get_class_content_from_html(
     }
 }
 
-fn get_basics_text_from_response_text(response_text: &str) -> Result<String, Box<dyn Error>> {
-    let document = Html::parse_document(response_text);
-    _get_class_content_from_html(document, ".basics")
-}
-
-fn get_translations_text_from_response_text(response_text: &str) -> Result<String, Box<dyn Error>> {
-    let document = Html::parse_document(response_text);
-    _get_class_content_from_html(document, ".translations")
-}
-
-fn get_title_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
-    let document = Html::parse_fragment(basics_text);
-    _get_class_content_from_html(document, ".bare span")
+fn get_selector_text_from_bigger_text(selector_str: &str, bigger_text: &str) -> Result<String, Box<dyn Error>> {
+    let document = Html::parse_document(bigger_text);
+    _get_class_content_from_html(document, selector_str)
 }
 
 fn get_overview_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
-    let document = Html::parse_fragment(basics_text);
-    let overview_html_text = _get_class_content_from_html(document, ".overview")?;
+    let overview_html_text = get_selector_text_from_bigger_text(".overview", basics_text)?;
 
     let overview_html = Html::parse_fragment(overview_html_text.as_str());
     let p_selector = scraper::Selector::parse("p").unwrap();
@@ -204,13 +193,6 @@ fn get_other_translations_from_translations_text(
         .collect::<Vec<String>>())
 }
 
-fn get_main_translation_from_translations_text(
-    basics_text: &str,
-) -> Result<String, Box<dyn Error>> {
-    let document = Html::parse_fragment(basics_text);
-    _get_class_content_from_html(document, ".tl")
-}
-
 pub async fn get_translation_info(
     search_query: &str,
     context_phrase: Option<String>,
@@ -230,12 +212,12 @@ pub async fn get_translation_info(
     let response_text = get_search_result_response_text(&search_result).await?;
     dbg!("{}", &response_text);
 
-    let basics_text = get_basics_text_from_response_text(response_text.as_str())?;
-    let title = get_title_from_basics_text(basics_text.as_str())?;
+    let basics_text = get_selector_text_from_bigger_text(".basics", response_text.as_str())?;
+    let title = get_selector_text_from_bigger_text(".bare span", basics_text.as_str())?;
     let overview = get_overview_from_basics_text(basics_text.as_str())?;
 
-    let translations_text = get_translations_text_from_response_text(response_text.as_str())?;
-    let main_translation = get_main_translation_from_translations_text(translations_text.as_str())?;
+    let translations_text = get_selector_text_from_bigger_text(".translations", response_text.as_str())?;
+    let main_translation = get_selector_text_from_bigger_text(".tl", translations_text.as_str())?;
     let other_translations =
         get_other_translations_from_translations_text(translations_text.as_str())?;
     Ok(TranslationInfo {
@@ -257,7 +239,7 @@ pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<
         let Some(search_query) = line_words.next() else {
             continue
         };
-        if search_query.starts_with("#") {
+        if search_query.starts_with('#') {
             continue
         }
         let context_phrase = line_words
