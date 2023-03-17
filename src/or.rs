@@ -169,8 +169,8 @@ fn get_selector_text_from_bigger_text(selector_str: &str, bigger_text: &str) -> 
 }
 fn get_first_sentence_and_translation_from_response_text(response_text: &str) -> Result<(String, String), Box<dyn Error>> {
     let sentences_text = get_selector_text_from_bigger_text("ul.sentences > li", response_text)?;
-    let ru_text = get_selector_text_from_bigger_text(".ru", &sentences_text)?;
-    let ru_html = Html::parse_fragment(ru_text.as_str());
+    let ru_html_text = get_selector_text_from_bigger_text(".ru", &sentences_text)?;
+    let ru_html = Html::parse_fragment(ru_html_text.as_str());
     let a_selector = scraper::Selector::parse("a").unwrap();
     let ru_sentence = ru_html
         .select(&a_selector)
@@ -178,8 +178,8 @@ fn get_first_sentence_and_translation_from_response_text(response_text: &str) ->
         .collect::<Vec<&str>>()
         .join(" ");
 
+    let en_sentence = get_selector_text_from_bigger_text(".tl span", &sentences_text)?;
 
-    let en_sentence = "WIP".to_string();
     Ok(
         (
             ru_sentence,
