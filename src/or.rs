@@ -25,14 +25,23 @@ pub struct TranslationInfo {
 }
 
 impl TranslationInfo {
+    fn get_n_of_diacritics(&self, field_str: &str) -> usize{
+        let mut i = 0;
+        for char in field_str.chars() {
+            if char == '\u{301}' {
+                i+=1
+            }
+        }
+        i
+    }
     fn max_field_len(&self) -> usize {
         let field_array: [usize; 4] = [
-            self.title.len(),
-            self.main_translation.len(),
-            self.other_translations_concatenated().len(),
+            self.title.chars().count(),
+            self.main_translation.chars().count(),
+            self.other_translations_concatenated().chars().count(),
             self.overview
                 .split('\n')
-                .map(|x| x.len())
+                .map(|x| x.chars().count())
                 .max()
                 .unwrap_or(0),
         ];
@@ -49,6 +58,16 @@ impl TranslationInfo {
     fn overview_in_one_line(&self) -> String {
         self.overview.replace('\n', "; ")
     }
+
+    fn overview_centered_with_walls(&self) -> String {
+        let width = self.max_field_len() + 2;
+        return self.overview
+            .split('\n')
+            .map(|x| format!("\u{2502}{:^width$}\u{2502}", x, width=width + self.get_n_of_diacritics(x)))
+            .collect::<Vec<String>>()
+            .join("\n")
+    }
+
 
     fn to_csv_string_record_slice(&self) -> String {
         format!(
@@ -71,17 +90,26 @@ impl TranslationInfo {
 
 impl fmt::Display for TranslationInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let width = self.max_field_len() + 2;
+        let separator = "\u{2500}".repeat(width);
+        let title_width = width + self.get_n_of_diacritics(&self.title);
+
         write!(
             f,
-            "{}\n{}\n{}\n{}\n{}",
+            "\u{0250c}{}\u{2510}\n\u{2502}{:^title_width$}\u{2502}\n\u{2502}{:^width$}\u{2502}\n\u{2502}{:^width$}\u{2502}\n\u{2502}{}\u{2502}\n{}\n\u{2514}{}\u{2518}",
+            separator,
             self.title.as_str(),
             self.main_translation.as_str(),
             self.other_translations_concatenated(),
-            "-".repeat(self.max_field_len()),
-            self.overview,
+            separator,
+            self.overview_centered_with_walls(),
+            separator,
+            width=width,
+            title_width=title_width,
         )?;
         if let Some(c) = &self.context_phrase {
-            write!(f, "\nContext phrase:{}", c,)?;
+            write!(f, "\n")?;
+            write!(f, "\n{}", c)?;
         }
         if let Some(ct) = &self.context_phrase_translation {
             write!(f, "\n{}", ct,)?;
