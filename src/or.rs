@@ -145,16 +145,16 @@ async fn get_search_result_response_text(search_result: &str) -> Result<String, 
 
 fn _get_class_content_from_html(
     html: Html,
-    class_selector: &str,
+    selector_str: &str,
 ) -> Result<String, Box<dyn Error>> {
-    let selector = scraper::Selector::parse(class_selector).unwrap();
+    let selector = scraper::Selector::parse(selector_str).unwrap();
     let first_text = html
         .select(&selector)
         .map(|x| x.inner_html()) // here it maybe text
         .next();
     match first_text {
         Some(text) => Ok(text),
-        None => Err("No element with class=\"{class_selector}\" found.".into()),
+        None => Err(format!("No element for \"{selector_str}\" found.").into()),
     }
 }
 
