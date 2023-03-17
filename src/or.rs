@@ -227,6 +227,7 @@ pub async fn get_translation_info(
         }
     };
     let response_text = get_search_result_response_text(&search_result).await?;
+    dbg!("{}", &response_text);
 
     let basics_text = get_basics_text_from_response_text(response_text.as_str())?;
     let title = get_title_from_basics_text(basics_text.as_str())?;
@@ -246,7 +247,9 @@ pub async fn get_translation_info(
         context_phrase,
     })
 }
-
+pub fn append_word_infos_from_file_name(file_name: &str) -> Result<(), Box<dyn Error>> {
+    Ok(())
+}
 pub fn append_word_info(word_info: &WordInfo) -> Result<(), Box<dyn Error>> {
     let write_file = OpenOptions::new()
         .write(true)

@@ -28,8 +28,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 create_deck_from_csv()?;
                 return Ok(());
             }
+            if ["-f", "--file"].contains(&args[1].as_str()) {
+                panic!("Missing file argument.");
+            }
         }
-        _ => context_phrase = Some(args[2..].join(" ")),
+        _ => {
+            if ["-f", "--file"].contains(&args[1].as_str()) {
+                or::append_word_infos_from_file_name(&args[2])?;
+                return Ok(());
+            }
+            context_phrase = Some(args[2..].join(" "))
+        }
     }
     let search_term = args[1].as_str();
     let result_word_info = or::get_translation_info(search_term, context_phrase).await?;
