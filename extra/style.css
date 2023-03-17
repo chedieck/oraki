@@ -11,20 +11,38 @@
 
 .search_result {
  color: blue;
+ font-size: 24px;
 }
 
 .nightMode .search_result {
  color: yellow;
 }
 
-.title {
- font-size: 24px;
+.otherTranslations {
+ color: #a00;
+}
+
+.nightMode .otherTranslations {
+    color: #f4f
+}
+
+.mainTranslation {
+ font-size: 30px;
  color: #00a;
 }
 
-.nightMode .title {
+.nightMode .mainTranslation {
     color: #ff4
 }
+
+.contextPhrase {
+    font-style: bold;
+}
+
+.contextPhraseTranslation {
+    font-style: bold;
+}
+
 
 .overview {
  color: #222;
