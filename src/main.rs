@@ -14,6 +14,13 @@ fn help() {
     println!("To compile the anki deck, run `oraki -c` or `oraki --compile`.");
 }
 
+async fn run(search_query: &str, context_phrase: Option<String>, verbose: bool) -> Result<(), Box<dyn Error>> {
+    let result_translation_info = or::get_translation_info(search_query, context_phrase).await?;
+    or::append_translation_info(&result_translation_info)?;
+    if verbose { println!("{result_translation_info}")};
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
@@ -34,15 +41,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
         _ => {
             if ["-f", "--file"].contains(&args[1].as_str()) {
-                or::append_translation_infos_from_file_name(&args[2])?;
-                return Ok(());
+                or::append_translation_infos_from_file_name(&args[2]).await?;
+                return Ok(())
             }
             context_phrase = Some(args[2..].join(" "))
         }
-    }
-    let search_term = args[1].as_str();
-    let result_translation_info = or::get_translation_info(search_term, context_phrase).await?;
-    or::append_translation_info(&result_translation_info)?;
-    println!("{result_translation_info}");
-    Ok(())
+    };
+    run(args[1].as_str(), context_phrase, true).await
 }

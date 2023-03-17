@@ -248,7 +248,28 @@ pub async fn get_translation_info(
         context_phrase,
     })
 }
-pub fn append_translation_infos_from_file_name(file_name: &str) -> Result<(), Box<dyn Error>> {
+pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<(), Box<dyn Error>> {
+    let file = std::fs::File::open(file_name)?;
+    let file_lines = BufReader::new(file).lines();
+    for result in file_lines {
+        let line = result?;
+        let mut line_words = line.split_whitespace();
+        let Some(search_query) = line_words.next() else {
+            continue
+        };
+        if search_query.starts_with("#") {
+            continue
+        }
+        let context_phrase = line_words
+            .fold(String::new(), |acc, s| format!("{} {}", acc, s))
+            .trim()
+            .to_string();
+        let context_phrase_option = (!context_phrase
+            .is_empty())
+            .then_some(context_phrase);
+
+        super::run(search_query, context_phrase_option, true).await?; // WIP change this to false
+    }
     Ok(())
 }
 pub fn append_translation_info(translation_info: &TranslationInfo) -> Result<(), Box<dyn Error>> {
