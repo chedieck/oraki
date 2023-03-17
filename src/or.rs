@@ -12,7 +12,7 @@ const HEADER_USER_AGENT : &str= "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537
 const DEFAULT_EMPTY_VALUE: &str = "-";
 
 #[derive(Debug, serde::Deserialize)]
-pub struct WordInfo {
+pub struct TranslationInfo {
     search_term: String,
     search_result: String,
     context_phrase: Option<String>,
@@ -22,7 +22,7 @@ pub struct WordInfo {
     overview: String,
 }
 
-impl WordInfo {
+impl TranslationInfo {
     fn max_field_len(&self) -> usize {
         let field_array: [usize; 4] = [
             self.title.len(),
@@ -66,7 +66,7 @@ impl WordInfo {
     }
 }
 
-impl fmt::Display for WordInfo {
+impl fmt::Display for TranslationInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -213,7 +213,7 @@ fn get_main_translation_from_translations_text(
 pub async fn get_translation_info(
     search_term: &str,
     context_phrase: Option<String>,
-) -> Result<WordInfo, Box<dyn Error>> {
+) -> Result<TranslationInfo, Box<dyn Error>> {
     let search_result = match get_search_result(search_term).await {
         Ok(result) => match result {
             Some(result) => result.replace('\'', ""),
@@ -237,7 +237,7 @@ pub async fn get_translation_info(
     let main_translation = get_main_translation_from_translations_text(translations_text.as_str())?;
     let other_translations =
         get_other_translations_from_translations_text(translations_text.as_str())?;
-    Ok(WordInfo {
+    Ok(TranslationInfo {
         search_term: String::from(search_term),
         search_result,
         title,
@@ -247,10 +247,10 @@ pub async fn get_translation_info(
         context_phrase,
     })
 }
-pub fn append_word_infos_from_file_name(file_name: &str) -> Result<(), Box<dyn Error>> {
+pub fn append_translation_infos_from_file_name(file_name: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
-pub fn append_word_info(word_info: &WordInfo) -> Result<(), Box<dyn Error>> {
+pub fn append_translation_info(translation_info: &TranslationInfo) -> Result<(), Box<dyn Error>> {
     let write_file = OpenOptions::new()
         .write(true)
         .append(true)
@@ -260,21 +260,21 @@ pub fn append_word_info(word_info: &WordInfo) -> Result<(), Box<dyn Error>> {
     let mut reader = ReaderBuilder::new()
         .delimiter(b'|')
         .from_path(get_main_csv_path()?)?;
-    let word_info_string = word_info.to_csv_string_record_slice();
+    let translation_info_string = translation_info.to_csv_string_record_slice();
     for record in reader.records() {
         let result = record?;
-        if result.as_slice() == word_info_string {
+        if result.as_slice() == translation_info_string {
             return Ok(());
         }
     }
     writer.write_record([
-        word_info.search_term.as_str(),
-        word_info.search_result.as_str(),
-        word_info.title.as_str(),
-        word_info.main_translation.as_str(),
-        word_info.other_translations_joined().as_str(),
-        word_info.overview_in_one_line().as_str(),
-        word_info
+        translation_info.search_term.as_str(),
+        translation_info.search_result.as_str(),
+        translation_info.title.as_str(),
+        translation_info.main_translation.as_str(),
+        translation_info.other_translations_joined().as_str(),
+        translation_info.overview_in_one_line().as_str(),
+        translation_info
             .context_phrase
             .as_ref()
             .unwrap_or(&String::from(""))

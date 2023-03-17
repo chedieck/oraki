@@ -34,15 +34,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
         _ => {
             if ["-f", "--file"].contains(&args[1].as_str()) {
-                or::append_word_infos_from_file_name(&args[2])?;
+                or::append_translation_infos_from_file_name(&args[2])?;
                 return Ok(());
             }
             context_phrase = Some(args[2..].join(" "))
         }
     }
     let search_term = args[1].as_str();
-    let result_word_info = or::get_translation_info(search_term, context_phrase).await?;
-    or::append_word_info(&result_word_info)?;
-    println!("{result_word_info}");
+    let result_translation_info = or::get_translation_info(search_term, context_phrase).await?;
+    or::append_translation_info(&result_translation_info)?;
+    println!("{result_translation_info}");
     Ok(())
 }
