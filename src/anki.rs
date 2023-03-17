@@ -66,10 +66,17 @@ pub fn create_deck_from_csv() -> Result<(), Box<dyn Error>> {
         .delimiter(b'|')
         .from_path(get_main_csv_path()?)?;
     let mut my_deck = Deck::new(DECK_ID, DECK_NAME, DECK_DESCRIPTION);
+    let mut seen_search_results: Vec<String> = vec![];
     for record in reader.records() {
         let result = record?;
+        let result_search_result = result[2].to_string();
+        if seen_search_results.contains(&result_search_result) {
+            println!("Skipping note for {} (already exists)...", &result[2]);
+            continue
+        }
         println!("Creating note for {}...", &result[2]);
         let note = create_note_from_result(make_anki_model()?, result)?;
+        seen_search_results.push(result_search_result);
         my_deck.add_note(note);
     }
     my_deck.write_to_file(get_main_output_anki_path().unwrap().to_str().unwrap())?;
