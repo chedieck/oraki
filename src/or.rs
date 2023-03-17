@@ -1,5 +1,6 @@
 use crate::utils::get_main_csv_path;
 use csv::{ReaderBuilder, WriterBuilder};
+use std::io::{self, BufRead, BufReader, Lines};
 use regex::Regex;
 use reqwest::header::USER_AGENT;
 use scraper::Html;
@@ -13,7 +14,7 @@ const DEFAULT_EMPTY_VALUE: &str = "-";
 
 #[derive(Debug, serde::Deserialize)]
 pub struct TranslationInfo {
-    search_term: String,
+    search_query: String,
     search_result: String,
     context_phrase: Option<String>,
     title: String,
@@ -51,7 +52,7 @@ impl TranslationInfo {
     fn to_csv_string_record_slice(&self) -> String {
         format!(
             "{}{}{}{}{}{}{}",
-            self.search_term,
+            self.search_query,
             self.search_result,
             self.title,
             self.main_translation,
@@ -85,7 +86,7 @@ impl fmt::Display for TranslationInfo {
 }
 
 // first request, get some word to match search term
-async fn get_search_term_response_json(input_term: &str) -> Result<Value, Box<dyn Error>> {
+async fn get_search_query_response_json(input_term: &str) -> Result<Value, Box<dyn Error>> {
     let client = reqwest::Client::new();
     let response = client
         .get(format!(
@@ -115,8 +116,8 @@ fn get_response_json_first_form_of(response_json: &Value) -> Option<String> {
     None
 }
 
-async fn get_search_result(search_term: &str) -> Result<Option<String>, Box<dyn Error>> {
-    let full_res_json = match get_search_term_response_json(search_term).await {
+async fn get_search_result(search_query: &str) -> Result<Option<String>, Box<dyn Error>> {
+    let full_res_json = match get_search_query_response_json(search_query).await {
         Ok(res) => res,
         Err(error) => return Err(error),
     };
@@ -211,17 +212,17 @@ fn get_main_translation_from_translations_text(
 }
 
 pub async fn get_translation_info(
-    search_term: &str,
+    search_query: &str,
     context_phrase: Option<String>,
 ) -> Result<TranslationInfo, Box<dyn Error>> {
-    let search_result = match get_search_result(search_term).await {
+    let search_result = match get_search_result(search_query).await {
         Ok(result) => match result {
             Some(result) => result.replace('\'', ""),
-            None => return Err(format!("No results found for {search_term}.").into()),
+            None => return Err(format!("No results found for {search_query}.").into()),
         },
         Err(error) => {
             return Err(format!(
-                "Couldn't find search result for term `{search_term}` with error:\n{error}"
+                "Couldn't find search result for term `{search_query}` with error:\n{error}"
             )
             .into())
         }
@@ -238,7 +239,7 @@ pub async fn get_translation_info(
     let other_translations =
         get_other_translations_from_translations_text(translations_text.as_str())?;
     Ok(TranslationInfo {
-        search_term: String::from(search_term),
+        search_query: String::from(search_query),
         search_result,
         title,
         main_translation,
@@ -268,7 +269,7 @@ pub fn append_translation_info(translation_info: &TranslationInfo) -> Result<(),
         }
     }
     writer.write_record([
-        translation_info.search_term.as_str(),
+        translation_info.search_query.as_str(),
         translation_info.search_result.as_str(),
         translation_info.title.as_str(),
         translation_info.main_translation.as_str(),
