@@ -1,0 +1,7 @@
+# Lines that start with '#' and empty lines are ignored.
+
+# The first word is the search query, the rest will be added as the context phrase for the card.
+тарелка Доска, хороший нож, тарелка, миска и венчик.
+
+# The context phrase is not necessary.
+серьги      

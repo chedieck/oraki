@@ -12,6 +12,9 @@ fn help() {
     println!("[search_query] can be both english or russian;");
     println!("All the subsequent arguments will be the [...context phrase];");
     println!("To compile the anki deck, run `oraki -c` or `oraki --compile`.");
+    println!();
+    println!("Alternatively, run `oraki -f path/to/file` do the searches by file.");
+    println!("Check the documentation for more details on that.");
 }
 
 async fn run(search_query: &str, context_phrase: Option<String>, verbose: bool) -> Result<(), Box<dyn Error>> {
