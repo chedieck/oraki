@@ -58,7 +58,8 @@ fn create_note_from_result(
             context_phrase.as_str(),
         ],
     )
-    .expect(format!("Could not create note from {}", result.as_slice()).as_str()))
+    .unwrap_or_else(|_| panic!("Could not create note from {}", result.as_slice()))
+    )
 }
 
 pub fn create_deck_from_csv() -> Result<(), Box<dyn Error>> {
