@@ -1,6 +1,6 @@
 use crate::utils::get_main_csv_path;
 use csv::{ReaderBuilder, WriterBuilder};
-use std::io::{self, BufRead, BufReader, Lines};
+use std::io::{BufRead, BufReader};
 use regex::Regex;
 use reqwest::header::USER_AGENT;
 use scraper::Html;
