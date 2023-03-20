@@ -310,6 +310,19 @@ pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<
     }
     Ok(())
 }
+pub fn has_query_been_searched(search_query: &str) -> Result<bool, Box<dyn Error>> {
+    let mut reader = ReaderBuilder::new()
+        .delimiter(b'|')
+        .from_path(get_main_csv_path()?)?;
+    for record in reader.records() {
+        let result = record?;
+        if result.get(0) == Some(search_query) {
+            return Ok(true)
+        }
+    }
+    Ok(false)
+}
+
 pub fn append_translation_info(translation_info: &TranslationInfo) -> Result<(), Box<dyn Error>> {
     let write_file = OpenOptions::new()
         .write(true)
@@ -317,15 +330,8 @@ pub fn append_translation_info(translation_info: &TranslationInfo) -> Result<(),
         .open(get_main_csv_path()?)
         .unwrap();
     let mut writer = WriterBuilder::new().delimiter(b'|').from_writer(write_file);
-    let mut reader = ReaderBuilder::new()
-        .delimiter(b'|')
-        .from_path(get_main_csv_path()?)?;
-    let translation_info_string = translation_info.to_csv_string_record_slice();
-    for record in reader.records() {
-        let result = record?;
-        if result.as_slice() == translation_info_string {
-            return Ok(());
-        }
+    if has_query_been_searched(&translation_info.search_query)? {
+        return Ok(())
     }
     writer.write_record([
         translation_info.search_query.as_str(),
