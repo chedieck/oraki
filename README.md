@@ -77,8 +77,13 @@ There is a CSS file at `extra/style.css`, you can customize it together with the
 
 Installing:
 ---
-Clone the repo, go into the directory and run `make install`.
+```
+git clone https://github.com/chedieck/oraki.git
+cd oraki
+make install
+```
 
+Requires `cargo`.
 
 TODO
 ---
