@@ -26,8 +26,7 @@ will output something like:
 Сча́стье - не́жный цвето́к.
 Happiness is a delicate flower.
 ```
-
-You can search in english too:
+**You can search in english too:**
 ```
 $ oraki knife
 ```
@@ -54,12 +53,15 @@ Every search you make is saved on `$HOME/.local/share/oraki/main.csv`. This file
 
 <p align="center">Front:</p>
 <p align="center">
-<img width="600" src="https://user-images.githubusercontent.com/21281174/225175364-a25f318a-4ee7-4068-b240-d68d0eec9f65.png">
+<img width="600" src="https://user-images.githubusercontent.com/21281174/226424934-e5a8e555-f893-453b-b0ac-a26539d80d23.png">
 </p>
 <p align="center">Back:</p>
 <p align="center">
-<img width="600" src="https://user-images.githubusercontent.com/21281174/225175388-98f0cb8e-4c26-4b1e-b6d7-4cd81deebeea.png">
+<img width="600" src="https://user-images.githubusercontent.com/21281174/226424381-160d7719-f9b1-48b6-80f4-d3d223f8b10e.png">
 </p>
+
+
+
 
 Things to notice:
 - The card "question" is the result of the search + the russian phrase if it exists;
