@@ -1,6 +1,5 @@
 use crate::utils::get_main_csv_path;
 use csv::{ReaderBuilder, WriterBuilder};
-use std::io::{BufRead, BufReader};
 use regex::Regex;
 use reqwest::header::USER_AGENT;
 use scraper::Html;
@@ -8,6 +7,7 @@ use serde_json::Value;
 use std::error::Error;
 use std::fmt;
 use std::fs::OpenOptions;
+use std::io::{BufRead, BufReader};
 
 const HEADER_USER_AGENT : &str= "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36";
 const DEFAULT_EMPTY_VALUE: &str = "-";
@@ -25,11 +25,11 @@ pub struct TranslationInfo {
 }
 
 impl TranslationInfo {
-    fn get_n_of_diacritics(&self, field_str: &str) -> usize{
+    fn get_n_of_diacritics(&self, field_str: &str) -> usize {
         let mut i = 0;
         for char in field_str.chars() {
             if char == '\u{301}' {
-                i+=1
+                i += 1
             }
         }
         i
@@ -61,18 +61,28 @@ impl TranslationInfo {
 
     fn overview_centered_with_walls(&self) -> String {
         let width = self.max_field_len() + 2;
-        return self.overview
+        return self
+            .overview
             .split('\n')
-            .map(|x| format!("\u{2502}{:^width$}\u{2502}", x, width=width + self.get_n_of_diacritics(x)))
+            .map(|x| {
+                format!(
+                    "\u{2502}{:^width$}\u{2502}",
+                    x,
+                    width = width + self.get_n_of_diacritics(x)
+                )
+            })
             .collect::<Vec<String>>()
-            .join("\n")
+            .join("\n");
     }
 
     fn from_csv_string_record_slice(record: csv::StringRecord) -> Result<Self, Box<dyn Error>> {
-        let other_translations = record.get(4).unwrap().to_string()
-                    .split(", ")
-                    .map(|s| s.to_string())
-                    .collect();
+        let other_translations = record
+            .get(4)
+            .unwrap()
+            .to_string()
+            .split(", ")
+            .map(|s| s.to_string())
+            .collect();
         let overview = record.get(5).unwrap().replace("; ", "\n");
         let context_phrase = match record.get(6).unwrap() {
             "" => None,
@@ -84,14 +94,14 @@ impl TranslationInfo {
         };
 
         Ok(Self {
-                search_query: record.get(0).unwrap().to_string(),
-                search_result: record.get(1).unwrap().to_string(),
-                title: record.get(2).unwrap().to_string(),
-                main_translation: record.get(3).unwrap().to_string(),
-                other_translations,
-                overview,
-                context_phrase,
-                context_phrase_translation
+            search_query: record.get(0).unwrap().to_string(),
+            search_result: record.get(1).unwrap().to_string(),
+            title: record.get(2).unwrap().to_string(),
+            main_translation: record.get(3).unwrap().to_string(),
+            other_translations,
+            overview,
+            context_phrase,
+            context_phrase_translation,
         })
     }
 
@@ -105,7 +115,9 @@ impl TranslationInfo {
             self.other_translations_joined(),
             self.overview_in_one_line(),
             self.context_phrase.as_ref().unwrap_or(&String::from("")),
-            self.context_phrase_translation.as_ref().unwrap_or(&String::from(""))
+            self.context_phrase_translation
+                .as_ref()
+                .unwrap_or(&String::from(""))
         )
     }
 
@@ -202,10 +214,7 @@ async fn get_search_result_response_text(search_result: &str) -> Result<String, 
         .await
 }
 
-fn _get_class_content_from_html(
-    html: Html,
-    selector_str: &str,
-) -> Result<String, Box<dyn Error>> {
+fn _get_class_content_from_html(html: Html, selector_str: &str) -> Result<String, Box<dyn Error>> {
     let selector = scraper::Selector::parse(selector_str).unwrap();
     let first_text = html
         .select(&selector)
@@ -217,11 +226,16 @@ fn _get_class_content_from_html(
     }
 }
 
-fn get_selector_text_from_bigger_text(selector_str: &str, bigger_text: &str) -> Result<String, Box<dyn Error>> {
+fn get_selector_text_from_bigger_text(
+    selector_str: &str,
+    bigger_text: &str,
+) -> Result<String, Box<dyn Error>> {
     let document = Html::parse_document(bigger_text);
     _get_class_content_from_html(document, selector_str)
 }
-fn get_first_sentence_and_translation_from_response_text(response_text: &str) -> Result<(String, String), Box<dyn Error>> {
+fn get_first_sentence_and_translation_from_response_text(
+    response_text: &str,
+) -> Result<(String, String), Box<dyn Error>> {
     let sentences_text = get_selector_text_from_bigger_text("ul.sentences > li", response_text)?;
     let ru_html_text = get_selector_text_from_bigger_text(".ru", &sentences_text)?;
     let ru_html = Html::parse_fragment(ru_html_text.as_str());
@@ -234,12 +248,7 @@ fn get_first_sentence_and_translation_from_response_text(response_text: &str) ->
 
     let en_sentence = get_selector_text_from_bigger_text(".tl span", &sentences_text)?;
 
-    Ok(
-        (
-            ru_sentence,
-            en_sentence
-        )
-    )
+    Ok((ru_sentence, en_sentence))
 }
 
 fn get_overview_from_basics_text(basics_text: &str) -> Result<String, Box<dyn Error>> {
@@ -272,11 +281,9 @@ fn get_other_translations_from_translations_text(
         .collect::<Vec<String>>())
 }
 
-pub async fn get_translation_info(
-    search_query: &str,
-) -> Result<TranslationInfo, Box<dyn Error>> {
+pub async fn get_translation_info(search_query: &str) -> Result<TranslationInfo, Box<dyn Error>> {
     if let Ok(Some(translation_info)) = get_cached_translation_info_for_query(search_query) {
-        return Ok(translation_info)
+        return Ok(translation_info);
     }
     let search_result = match get_search_result(search_query).await {
         Ok(result) => match result {
@@ -296,7 +303,8 @@ pub async fn get_translation_info(
     // get context phrase
     let mut context_phrase_translation = None;
     let mut context_phrase = None;
-    let first_sentence_result = get_first_sentence_and_translation_from_response_text(response_text.as_str());
+    let first_sentence_result =
+        get_first_sentence_and_translation_from_response_text(response_text.as_str());
     if let Ok(first_sentence) = first_sentence_result {
         context_phrase = Some(first_sentence.0);
         context_phrase_translation = Some(first_sentence.1);
@@ -305,7 +313,8 @@ pub async fn get_translation_info(
     let title = get_selector_text_from_bigger_text(".bare span", basics_text.as_str())?;
     let overview = get_overview_from_basics_text(basics_text.as_str())?;
 
-    let translations_text = get_selector_text_from_bigger_text(".translations", response_text.as_str())?;
+    let translations_text =
+        get_selector_text_from_bigger_text(".translations", response_text.as_str())?;
     let main_translation = get_selector_text_from_bigger_text(".tl", translations_text.as_str())?;
     let other_translations =
         get_other_translations_from_translations_text(translations_text.as_str())?;
@@ -322,7 +331,9 @@ pub async fn get_translation_info(
     })
 }
 
-pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<(), Box<dyn Error>> {
+pub async fn append_translation_infos_from_file_name(
+    file_name: &str,
+) -> Result<(), Box<dyn Error>> {
     let file = std::fs::File::open(file_name)?;
     let file_lines = BufReader::new(file).lines();
     for result in file_lines {
@@ -332,7 +343,7 @@ pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<
             continue
         };
         if search_query.starts_with('#') {
-            continue
+            continue;
         }
 
         super::run(search_query, false).await?;
@@ -340,7 +351,9 @@ pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<
     Ok(())
 }
 
-pub fn get_cached_translation_info_for_query(search_query: &str) -> Result<Option<TranslationInfo>, Box<dyn Error>> {
+pub fn get_cached_translation_info_for_query(
+    search_query: &str,
+) -> Result<Option<TranslationInfo>, Box<dyn Error>> {
     let mut reader = ReaderBuilder::new()
         .delimiter(b'|')
         .from_path(get_main_csv_path()?)?;
@@ -361,7 +374,7 @@ pub fn append_translation_info(translation_info: &TranslationInfo) -> Result<(),
         .unwrap();
     let mut writer = WriterBuilder::new().delimiter(b'|').from_writer(write_file);
     if get_cached_translation_info_for_query(&translation_info.search_query)?.is_some() {
-        return Ok(())
+        return Ok(());
     }
     writer.write_record([
         translation_info.search_query.as_str(),

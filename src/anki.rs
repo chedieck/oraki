@@ -7,8 +7,7 @@ const MODEL_ID: i64 = 4198389758;
 const DECK_ID: i64 = 8129319832;
 const DECK_NAME: &str = "Oraki searched words with phrases";
 const DECK_DESCRIPTION: &str = "Words searched using oraki with context phrases.";
-const Q_FORMAT: &str =
-    r#"<p class="search_result">{{search_result}}</p><p class="contextPhraseTranslation">{{context_phrase}}</p>"#;
+const Q_FORMAT: &str = r#"<p class="search_result">{{search_result}}</p><p class="contextPhraseTranslation">{{context_phrase}}</p>"#;
 const A_FORMAT: &str = r#"{{FrontSide}}<hr><p class="mainTranslation">{{main_translation}}</p><span class="contextPhraseTranslation"><p class="otherTranslations">{{other_translations}}</p>{{context_phrase_translation}}</span><p>{{title}} ({{search_query}})</p><br>-<br><div class="overview">{{overview}}</div>"#;
 
 //const A_FORMAT: &str = r#"{{FrontSide}}<hr><p class="title">{{title}}</p><p>({{search_query}})</p><span class="main_translation">{{main_translation}}</span><span>{{context_phrase_translation}}</span><br>{{other_translations}}<br><div class="overview">{{overview}}</div>"#;
@@ -55,8 +54,7 @@ fn create_note_from_result(
             result.get(7).unwrap(),
         ],
     )
-    .unwrap_or_else(|_| panic!("Could not create note from {}", result.as_slice()))
-    )
+    .unwrap_or_else(|_| panic!("Could not create note from {}", result.as_slice())))
 }
 
 pub fn create_deck_from_csv() -> Result<(), Box<dyn Error>> {
@@ -70,7 +68,7 @@ pub fn create_deck_from_csv() -> Result<(), Box<dyn Error>> {
         let result_search_result = result[2].to_string();
         if seen_search_results.contains(&result_search_result) {
             println!("Skipping note for {} (already exists)...", &result[2]);
-            continue
+            continue;
         }
         println!("Creating note for {}...", &result[2]);
         let note = create_note_from_result(make_anki_model()?, result)?;

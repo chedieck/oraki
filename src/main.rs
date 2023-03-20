@@ -22,8 +22,7 @@ async fn run(search_query: &str, full_info: bool) -> Result<(), Box<dyn Error>> 
     or::append_translation_info(&result_translation_info)?;
     if full_info {
         println!("{result_translation_info}")
-    }
-    else {
+    } else {
         println!("Getting info for {search_query}...")
     }
     Ok(())
@@ -49,7 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         _ => {
             if ["-f", "--file"].contains(&args[1].as_str()) {
                 or::append_translation_infos_from_file_name(&args[2]).await?;
-                return Ok(())
+                return Ok(());
             }
         }
     };
