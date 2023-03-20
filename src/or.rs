@@ -73,7 +73,7 @@ impl TranslationInfo {
                     .split(", ")
                     .map(|s| s.to_string())
                     .collect();
-        let overview = record.get(5).unwrap().replace("; ", "\n").to_string();
+        let overview = record.get(5).unwrap().replace("; ", "\n");
         let context_phrase = match record.get(6).unwrap() {
             "" => None,
             s => Some(s.to_string()),
@@ -134,7 +134,7 @@ impl fmt::Display for TranslationInfo {
             title_width=title_width,
         )?;
         if let Some(c) = &self.context_phrase {
-            write!(f, "\n")?;
+            writeln!(f)?;
             write!(f, "\n{}", c)?;
         }
         if let Some(ct) = &self.context_phrase_translation {
