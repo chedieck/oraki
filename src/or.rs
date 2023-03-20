@@ -68,6 +68,32 @@ impl TranslationInfo {
             .join("\n")
     }
 
+    fn from_csv_string_record_slice(record: csv::StringRecord) -> Result<Self, Box<dyn Error>> {
+        let other_translations = record.get(4).unwrap().to_string()
+                    .split(", ")
+                    .map(|s| s.to_string())
+                    .collect();
+        let overview = record.get(5).unwrap().replace("; ", "\n").to_string();
+        let context_phrase = match record.get(6).unwrap() {
+            "" => None,
+            s => Some(s.to_string()),
+        };
+        let context_phrase_translation = match record.get(7).unwrap() {
+            "" => None,
+            s => Some(s.to_string()),
+        };
+
+        Ok(Self {
+                search_query: record.get(0).unwrap().to_string(),
+                search_result: record.get(1).unwrap().to_string(),
+                title: record.get(2).unwrap().to_string(),
+                main_translation: record.get(3).unwrap().to_string(),
+                other_translations,
+                overview,
+                context_phrase,
+                context_phrase_translation
+        })
+    }
 
     fn to_csv_string_record_slice(&self) -> String {
         format!(
@@ -249,6 +275,9 @@ fn get_other_translations_from_translations_text(
 pub async fn get_translation_info(
     search_query: &str,
 ) -> Result<TranslationInfo, Box<dyn Error>> {
+    if let Ok(Some(translation_info)) = get_cached_translation_info_for_query(search_query) {
+        return Ok(translation_info)
+    }
     let search_result = match get_search_result(search_query).await {
         Ok(result) => match result {
             Some(result) => result,
@@ -310,17 +339,18 @@ pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<
     }
     Ok(())
 }
-pub fn has_query_been_searched(search_query: &str) -> Result<bool, Box<dyn Error>> {
+
+pub fn get_cached_translation_info_for_query(search_query: &str) -> Result<Option<TranslationInfo>, Box<dyn Error>> {
     let mut reader = ReaderBuilder::new()
         .delimiter(b'|')
         .from_path(get_main_csv_path()?)?;
     for record in reader.records() {
         let result = record?;
         if result.get(0) == Some(search_query) {
-            return Ok(true)
+            return Ok(Some(TranslationInfo::from_csv_string_record_slice(result)?));
         }
     }
-    Ok(false)
+    Ok(None)
 }
 
 pub fn append_translation_info(translation_info: &TranslationInfo) -> Result<(), Box<dyn Error>> {
@@ -330,7 +360,7 @@ pub fn append_translation_info(translation_info: &TranslationInfo) -> Result<(),
         .open(get_main_csv_path()?)
         .unwrap();
     let mut writer = WriterBuilder::new().delimiter(b'|').from_writer(write_file);
-    if has_query_been_searched(&translation_info.search_query)? {
+    if get_cached_translation_info_for_query(&translation_info.search_query)?.is_some() {
         return Ok(())
     }
     writer.write_record([
