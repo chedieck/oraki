@@ -17,8 +17,8 @@ fn help() {
     println!("Check the documentation for more details on that.");
 }
 
-async fn run(search_query: &str, context_phrase: Option<String>, verbose: bool) -> Result<(), Box<dyn Error>> {
-    let result_translation_info = or::get_translation_info(search_query, context_phrase).await?;
+async fn run(search_query: &str, verbose: bool) -> Result<(), Box<dyn Error>> {
+    let result_translation_info = or::get_translation_info(search_query).await?;
     or::append_translation_info(&result_translation_info)?;
     if verbose { println!("{result_translation_info}")};
     Ok(())
@@ -27,7 +27,6 @@ async fn run(search_query: &str, context_phrase: Option<String>, verbose: bool) 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
-    let mut context_phrase: Option<String> = None;
     match args.len() {
         1 => {
             help();
@@ -47,8 +46,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 or::append_translation_infos_from_file_name(&args[2]).await?;
                 return Ok(())
             }
-            context_phrase = Some(args[2..].join(" "))
         }
     };
-    run(args[1].as_str(), context_phrase, true).await
+    run(args[1].as_str(), true).await
 }

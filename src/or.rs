@@ -248,7 +248,6 @@ fn get_other_translations_from_translations_text(
 
 pub async fn get_translation_info(
     search_query: &str,
-    mut context_phrase: Option<String>,
 ) -> Result<TranslationInfo, Box<dyn Error>> {
     let search_result = match get_search_result(search_query).await {
         Ok(result) => match result {
@@ -263,16 +262,17 @@ pub async fn get_translation_info(
         }
     };
     let response_text = get_search_result_response_text(&search_result).await?;
-
     let basics_text = get_selector_text_from_bigger_text(".basics", response_text.as_str())?;
+
+    // get context phrase
     let mut context_phrase_translation = None;
-    if context_phrase.is_none() {
-        let first_sentence_result = get_first_sentence_and_translation_from_response_text(response_text.as_str());
-        if let Ok(first_sentence) = first_sentence_result {
-            context_phrase = Some(first_sentence.0);
-            context_phrase_translation = Some(first_sentence.1);
-        }
+    let mut context_phrase = None;
+    let first_sentence_result = get_first_sentence_and_translation_from_response_text(response_text.as_str());
+    if let Ok(first_sentence) = first_sentence_result {
+        context_phrase = Some(first_sentence.0);
+        context_phrase_translation = Some(first_sentence.1);
     }
+
     let title = get_selector_text_from_bigger_text(".bare span", basics_text.as_str())?;
     let overview = get_overview_from_basics_text(basics_text.as_str())?;
 
@@ -292,6 +292,7 @@ pub async fn get_translation_info(
         context_phrase_translation,
     })
 }
+
 pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<(), Box<dyn Error>> {
     let file = std::fs::File::open(file_name)?;
     let file_lines = BufReader::new(file).lines();
@@ -304,15 +305,9 @@ pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<
         if search_query.starts_with('#') {
             continue
         }
-        let context_phrase = line_words
-            .fold(String::new(), |acc, s| format!("{} {}", acc, s))
-            .trim()
-            .to_string();
-        let context_phrase_option = (!context_phrase
-            .is_empty())
-            .then_some(context_phrase);
 
-        super::run(search_query, context_phrase_option, true).await?; // WIP change this to false
+        super::run(search_query, true).await?; // WIP change this to false & change behavior to
+                                               // show something
     }
     Ok(())
 }
