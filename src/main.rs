@@ -17,10 +17,15 @@ fn help() {
     println!("Check the documentation for more details on that.");
 }
 
-async fn run(search_query: &str, verbose: bool) -> Result<(), Box<dyn Error>> {
+async fn run(search_query: &str, full_info: bool) -> Result<(), Box<dyn Error>> {
     let result_translation_info = or::get_translation_info(search_query).await?;
     or::append_translation_info(&result_translation_info)?;
-    if verbose { println!("{result_translation_info}")};
+    if full_info {
+        println!("{result_translation_info}")
+    }
+    else {
+        println!("Getting info for {search_query}...")
+    }
     Ok(())
 }
 

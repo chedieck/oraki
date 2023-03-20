@@ -306,8 +306,7 @@ pub async fn append_translation_infos_from_file_name(file_name: &str) -> Result<
             continue
         }
 
-        super::run(search_query, true).await?; // WIP change this to false & change behavior to
-                                               // show something
+        super::run(search_query, false).await?;
     }
     Ok(())
 }
