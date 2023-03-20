@@ -156,9 +156,9 @@ async fn get_search_result(search_query: &str) -> Result<Option<String>, Box<dyn
     };
 
     if let Some(first_term) = get_response_json_first_term(&full_res_json) {
-        Ok(Some(first_term))
+        Ok(Some(first_term.replace('\'', "")))
     } else if let Some(first_form_of) = get_response_json_first_form_of(&full_res_json) {
-        Ok(Some(first_form_of))
+        Ok(Some(first_form_of.replace('\'', "")))
     } else {
         Ok(None)
     }
@@ -252,7 +252,7 @@ pub async fn get_translation_info(
 ) -> Result<TranslationInfo, Box<dyn Error>> {
     let search_result = match get_search_result(search_query).await {
         Ok(result) => match result {
-            Some(result) => result.replace('\'', ""),
+            Some(result) => result,
             None => return Err(format!("No results found for {search_query}.").into()),
         },
         Err(error) => {
