@@ -89,4 +89,4 @@ TODO
 ---
 - [x] Create function to do many queries from a file
 - [x] Get context phrase when not provided and it exists
-- [ ] Remove support for custom phrase
+- [x] Remove support for custom phrase
