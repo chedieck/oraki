@@ -7,14 +7,14 @@ mod or;
 mod utils;
 
 fn help() {
-    println!("Usage: oraki [search_query] [...context phrase]");
+    println!("Usage: oraki [option] [search_query]");
     println!("-------------------------------------------------------------------");
-    println!("[search_query] can be both english or russian;");
-    println!("All the subsequent arguments will be the [...context phrase];");
-    println!("To compile the anki deck, run `oraki -c` or `oraki --compile`.");
+    println!("Options:");
+    println!("-c, --compile: Compile searched queries into $HOME/.local/share/oraki/output.apkg.");
+    println!("               Further arguments will be ignored.");
+    println!("-f, --file:    Do multiple searchs, one for each line of the file.");
     println!();
-    println!("Alternatively, run `oraki -f path/to/file` do the searches by file.");
-    println!("Check the documentation for more details on that.");
+    println!("[search_query] can be both english or russian.");
 }
 
 async fn run(search_query: &str, print_full_info: bool) -> Result<(), Box<dyn Error>> {
