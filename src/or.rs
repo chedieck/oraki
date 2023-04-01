@@ -347,7 +347,10 @@ pub async fn append_translation_infos_from_file_name(
             continue;
         }
 
-        super::run(search_query, false).await?;
+        let Ok(_) = super::run(search_query, false).await else {
+            println!("Failed getting info for {search_query}.");
+            continue
+        };
     }
     Ok(())
 }
