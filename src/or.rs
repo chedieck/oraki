@@ -174,8 +174,15 @@ async fn get_search_query_response_json(input_term: &str) -> Result<Value, Box<d
 }
 
 fn get_response_json_first_term(response_json: &Value) -> Option<String> {
-    if let Some(first_term) = response_json["result"]["words"][0]["word"]["ru"].as_str() {
-        return Some(String::from(first_term));
+    let result_words = response_json["result"]["words"].as_array().unwrap();
+    for word in result_words {
+        let tls = word["word"]["tls"].as_array().unwrap();
+        if tls.is_empty() {
+            continue
+        }
+        if let Some(result) = word["word"]["ru"].as_str() {
+            return Some(String::from(result));
+        }
     }
     None
 }
