@@ -187,14 +187,6 @@ fn get_response_json_first_term(response_json: &Value) -> Option<String> {
     None
 }
 
-// Apparently, OpenRussian deprecated this format.
-fn get_response_json_first_form_of(response_json: &Value) -> Option<String> {
-    if let Some(first_term) = response_json["result"]["formOf"][0]["source"]["ru"].as_str() {
-        return Some(String::from(first_term));
-    }
-    None
-}
-
 async fn get_search_result(search_query: &str) -> Result<Option<String>, Box<dyn Error>> {
     let full_res_json = match get_search_query_response_json(search_query).await {
         Ok(res) => res,
@@ -203,8 +195,6 @@ async fn get_search_result(search_query: &str) -> Result<Option<String>, Box<dyn
 
     if let Some(first_term) = get_response_json_first_term(&full_res_json) {
         Ok(Some(first_term.replace('\'', "")))
-    //} else if let Some(first_form_of) = get_response_json_first_form_of(&full_res_json) {
-        //Ok(Some(first_form_of.replace('\'', "")))
     } else {
         Ok(None)
     }
