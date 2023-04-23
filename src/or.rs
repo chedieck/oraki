@@ -279,9 +279,10 @@ fn get_other_translations_from_translations_text(
         .collect::<Vec<String>>())
 }
 
-pub async fn get_translation_info(search_query: &str) -> Result<TranslationInfo, Box<dyn Error>> {
+// second argument on return refers if result already existed
+pub async fn get_translation_info(search_query: &str) -> Result<(TranslationInfo, bool), Box<dyn Error>> {
     if let Ok(Some(translation_info)) = get_cached_translation_info_for_query(search_query) {
-        return Ok(translation_info);
+        return Ok((translation_info, true));
     }
     let search_result = match get_search_result(search_query).await {
         Ok(result) => match result {
@@ -317,7 +318,7 @@ pub async fn get_translation_info(search_query: &str) -> Result<TranslationInfo,
     let other_translations =
         get_other_translations_from_translations_text(translations_text.as_str())?;
 
-    Ok(TranslationInfo {
+    Ok((TranslationInfo {
         search_query: String::from(search_query),
         search_result,
         title,
@@ -326,14 +327,15 @@ pub async fn get_translation_info(search_query: &str) -> Result<TranslationInfo,
         overview,
         context_phrase,
         context_phrase_translation,
-    })
+    }, false))
 }
 
 pub async fn append_translation_infos_from_file_name(
     file_name: &str,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<Vec<String>, Box<dyn Error>> {
     let file = std::fs::File::open(file_name)?;
     let file_lines = BufReader::new(file).lines();
+    let mut failed_results: Vec<String> = vec![];
     for result in file_lines {
         let line = result?;
         let mut line_words = line.split_whitespace();
@@ -346,10 +348,11 @@ pub async fn append_translation_infos_from_file_name(
 
         let Ok(_) = super::run(search_query, false).await else {
             println!("Failed getting info for {search_query}.");
+            failed_results.push(search_query.to_string());
             continue
         };
     }
-    Ok(())
+    Ok(failed_results)
 }
 
 pub fn get_cached_translation_info_for_query(

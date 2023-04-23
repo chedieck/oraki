@@ -18,10 +18,12 @@ fn help() {
 }
 
 async fn run(search_query: &str, print_full_info: bool) -> Result<(), Box<dyn Error>> {
-    let result_translation_info = or::get_translation_info(search_query).await?;
+    let (result_translation_info, already_existed) = or::get_translation_info(search_query).await?;
     or::append_translation_info(&result_translation_info)?;
     if print_full_info {
         println!("{result_translation_info}")
+    } else if already_existed {
+        println!("Got existent info for {search_query}...")
     } else {
         println!("Getting info for {search_query}...")
     }
@@ -47,7 +49,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
         _ => {
             if ["-f", "--file"].contains(&args[1].as_str()) {
-                or::append_translation_infos_from_file_name(&args[2]).await?;
+                let failed_results = or::append_translation_infos_from_file_name(&args[2]).await?;
+                println!("Failed the following: {failed_results:#?}");
                 return Ok(());
             }
         }
