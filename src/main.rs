@@ -1,6 +1,8 @@
 use crate::anki::create_deck_from_csv;
 use std::env;
 use std::error::Error;
+use std::fs::File;
+use std::io::Write;
 
 mod anki;
 mod or;
@@ -26,6 +28,15 @@ async fn run(search_query: &str, print_full_info: bool) -> Result<bool, Box<dyn 
     Ok(already_existed)
 }
 
+fn vec_to_file(filename: &str, lines: &Vec<String>) -> Result<(), Box<dyn Error>> {
+    let mut file = File::create(filename)?;
+    for line in lines {
+        file.write_all(line.as_bytes())?;
+        file.write_all(b"\n")?; // add a newline after each line
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
@@ -46,7 +57,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         _ => {
             if ["-f", "--file"].contains(&args[1].as_str()) {
                 let results = or::append_translation_infos_from_file_name(&args[2]).await?;
-                println!("Result:\nFetched {}/{}\nHad{}/{}\nFailed{}/{}",
+                println!();
+                println!("========");
+                println!();
+                println!("Results:\n  Fetched: {}/{}\n  Had: {}/{}\n  Failed: {}/{}",
                     results.fetched_results.len(),
                     results.n_total,
                     results.existent_results.len(),
@@ -54,7 +68,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     results.failed_results.len(),
                     results.n_total,
                     );
-                println!("Failed the following: {:#?}", results.failed_results);
+                vec_to_file("failed.out", &results.failed_results)?;
+                println!();
+                println!("Failed results written to `failed.out`.");
                 return Ok(());
             }
         }
