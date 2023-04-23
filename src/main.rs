@@ -17,17 +17,13 @@ fn help() {
     println!("[search_query] can be both english or russian.");
 }
 
-async fn run(search_query: &str, print_full_info: bool) -> Result<(), Box<dyn Error>> {
+async fn run(search_query: &str, print_full_info: bool) -> Result<bool, Box<dyn Error>> {
     let (result_translation_info, already_existed) = or::get_translation_info(search_query).await?;
     or::append_translation_info(&result_translation_info)?;
     if print_full_info {
         println!("{result_translation_info}")
-    } else if already_existed {
-        println!("Got existent info for {search_query}...")
-    } else {
-        println!("Getting info for {search_query}...")
-    }
-    Ok(())
+    } 
+    Ok(already_existed)
 }
 
 #[tokio::main]
@@ -49,11 +45,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
         _ => {
             if ["-f", "--file"].contains(&args[1].as_str()) {
-                let failed_results = or::append_translation_infos_from_file_name(&args[2]).await?;
-                println!("Failed the following: {failed_results:#?}");
+                let results = or::append_translation_infos_from_file_name(&args[2]).await?;
+                println!("Result:\nFetched {}/{}\nHad{}/{}\nFailed{}/{}",
+                    results.fetched_results.len(),
+                    results.n_total,
+                    results.existent_results.len(),
+                    results.n_total,
+                    results.failed_results.len(),
+                    results.n_total,
+                    );
+                println!("Failed the following: {:#?}", results.failed_results);
                 return Ok(());
             }
         }
     };
-    run(args[1].as_str(), true).await
+    run(args[1].as_str(), true).await?;
+    Ok(())
 }

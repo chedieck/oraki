@@ -1,4 +1,5 @@
 use crate::utils::get_main_csv_path;
+use indicatif::{ProgressBar, ProgressStyle};
 use csv::{ReaderBuilder, WriterBuilder};
 use regex::Regex;
 use reqwest::header::USER_AGENT;
@@ -330,13 +331,35 @@ pub async fn get_translation_info(search_query: &str) -> Result<(TranslationInfo
     }, false))
 }
 
+#[derive(Debug)]
+pub struct FileResult {
+    pub failed_results: Vec<String>,
+    pub fetched_results: Vec<String>,
+    pub existent_results: Vec<String>,
+    pub n_total: u64,
+}
+
 pub async fn append_translation_infos_from_file_name(
     file_name: &str,
-) -> Result<Vec<String>, Box<dyn Error>> {
+) -> Result<FileResult, Box<dyn Error>> {
     let file = std::fs::File::open(file_name)?;
-    let file_lines = BufReader::new(file).lines();
+    let file = BufReader::new(file);
+    let file_lines = file.lines().collect::<Vec<Result<String, std::io::Error>>>();
+
+    let n_lines = file_lines.len() as u64;
+    // progress bar
+    let pb = ProgressBar::new(n_lines);
+    pb.set_style(
+        ProgressStyle::default_bar()
+        .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})")?
+        .progress_chars("#>-"),
+    );
+
     let mut failed_results: Vec<String> = vec![];
-    for result in file_lines {
+    let mut existent_results: Vec<String> = vec![];
+    let mut fetched_results: Vec<String> = vec![];
+    for result in file_lines.into_iter() {
+        pb.inc(1);
         let line = result?;
         let mut line_words = line.split_whitespace();
         let Some(search_query) = line_words.next() else {
@@ -346,13 +369,27 @@ pub async fn append_translation_infos_from_file_name(
             continue;
         }
 
-        let Ok(_) = super::run(search_query, false).await else {
-            println!("Failed getting info for {search_query}.");
+        if let Ok(already_existed) = super::run(search_query, false).await {
+            if already_existed {
+                pb.println(format!("Got existent info for {search_query}..."));
+                existent_results.push(search_query.to_string());
+            } else {
+                pb.println(format!("Got new info for {search_query}..."));
+                fetched_results.push(search_query.to_string());
+            }
+        }
+        else {
+            pb.println(format!("Failed getting info for {search_query}."));
             failed_results.push(search_query.to_string());
             continue
         };
     }
-    Ok(failed_results)
+    Ok(FileResult {
+        failed_results,
+        fetched_results,
+        existent_results,
+        n_total: n_lines 
+    })
 }
 
 pub fn get_cached_translation_info_for_query(
